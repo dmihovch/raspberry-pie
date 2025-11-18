@@ -1,0 +1,9 @@
+Files in this repository:
+Makefile : use to assemble and link examples
+lights.s : assembly library to manipulate the LED array on the sense hat
+joystick.s : assembly library to read joystick manipulation 
+clear.s : example program to clear all the lights on the sense hat
+dots.s : example program to color two pixels blue
+dotmove.s : example program to move a dot around the leds using the joystick
+monogramAR : example compiled program for "monogramming" assignment
+towerAR : example compiled program for "joystick" assignment

@@ -17,3 +17,4 @@ void PieSetPixel(int, int, int, int, int);
 FrameBuffer* InitPieFrameBuffer();
 void DrawPie(FrameBuffer*);
 void InitPieGraphic();
+void ClosePieGraphic();

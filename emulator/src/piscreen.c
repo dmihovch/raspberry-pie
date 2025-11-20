@@ -1,4 +1,5 @@
 #include "../include/piscreen.h"
+#include <ncurses.h>
 
 
 
@@ -14,6 +15,7 @@ void PieSetPixel(FrameBuffer* fb, int x, int y, int r, int g, int b){
     xGrid = fb->pixels[x][y].x;
     yGrid = fb->pixels[x][y].y;
 
+    //Unless it becomes a performance issue, I'm just going to have the colors overwrite eachother
     init_color(8, rScaled, gScaled, bScaled);
     init_pair(8, 8, COLOR_BLACK);
     attron(COLOR_PAIR(8));
@@ -29,6 +31,7 @@ FrameBuffer* InitPieFrameBuffer(){
 
     initscr();
     noecho();
+    curs_set(0);
 
     if(!has_colors()){
         return NULL;
@@ -96,7 +99,11 @@ void InitPieGraphic(FrameBuffer* fb){
 
 void ClosePieGraphic(){
 
+	//some of these calls are probably redundant
     endwin();
+    reset_shell_mode();
+    reset_color_pairs();
+    use_default_colors();
 
 }
 

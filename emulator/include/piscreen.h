@@ -1,10 +1,16 @@
 #include <ncurses.h>
 #include <stdlib.h>
 
-typedef struct {
-    uint16_t pixels[8][8];
-} FrameBuffer;
 
+typedef struct {
+    int x;
+    int y;
+    uint16_t color;
+} EmulatedPixel;
+
+typedef struct {
+    EmulatedPixel pixels[8][8];
+} FrameBuffer;
 
 /*
  * x
@@ -13,8 +19,8 @@ typedef struct {
  * g
  * b
  */
-void PieSetPixel(int, int, int, int, int);
+void PieSetPixel(FrameBuffer*, int, int, int, int, int);
 FrameBuffer* InitPieFrameBuffer();
 void DrawPie(FrameBuffer*);
-void InitPieGraphic();
+void InitPieGraphic(FrameBuffer*);
 void ClosePieGraphic();

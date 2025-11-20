@@ -1,30 +1,59 @@
 #include "../include/piscreen.h"
 
-int Xmax;
-int Ymax;
 
-void PieSetPixel(int x, int y, int r, int g, int b){
+
+void PieSetPixel(FrameBuffer* fb, int x, int y, int r, int g, int b){
+
+
+
+    int rScaled, gScaled, bScaled, xGrid, yGrid;
+    rScaled = (r * 1000) / 255;
+    gScaled = (g * 1000) / 255;
+    bScaled = (b * 1000) / 255;
+
+    xGrid = fb->pixels[x][y].x;
+    yGrid = fb->pixels[x][y].y;
+
+    init_color(8, rScaled, gScaled, bScaled);
+    init_pair(8, 8, COLOR_BLACK);
+    attron(COLOR_PAIR(8));
+    mvaddch(yGrid,xGrid,'*');
+    attroff(COLOR_PAIR(8));
+    refresh();
+
+
 
 }
 
 FrameBuffer* InitPieFrameBuffer(){
 
+    initscr();
+    noecho();
+
+    if(!has_colors()){
+        return NULL;
+    }
+    start_color();
+
+
+
+
+
     FrameBuffer* fb = calloc(1,sizeof(FrameBuffer));
     if(fb == NULL) return NULL;
+
+
+
+    InitPieGraphic(fb);
+
     return fb;
-
-
-
-    InitPieGraphic();
-
 }
 
-void InitPieGraphic(){
+void InitPieGraphic(FrameBuffer* fb){
 
-    initscr();
 
-    Xmax = getmaxx(stdscr);
-    Ymax = getmaxy(stdscr);
+    int Xmax = getmaxx(stdscr);
+    int Ymax = getmaxy(stdscr);
 
     int lineHeight = 17;
     int lineWidth = 33;
@@ -43,7 +72,9 @@ void InitPieGraphic(){
         for (int x = 0; x < 8; x++) {
             mvaddch(start_y + y * 2 + 1, start_x + x * 4, '|');
             mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 1, ' ');
-            mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 2, '*');
+            mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 2, ' ');
+            fb->pixels[x][y].x = (start_x+x*4+2);
+            fb->pixels[x][y].y = (start_y+y*2+1);
             mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 3, ' ');
         }
         mvaddch(start_y + y * 2 + 1, start_x + 32, '|');

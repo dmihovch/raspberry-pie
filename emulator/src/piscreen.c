@@ -1,7 +1,6 @@
 #include "../include/piscreen.h"
 
 
-int nextColorIdx = 8;
 
 
 
@@ -47,8 +46,7 @@ FrameBuffer* InitPieFrameBuffer(){
     FrameBuffer* fb = calloc(1,sizeof(FrameBuffer));
     if(fb == NULL) return NULL;
 
-
-
+    fb->nextColorIdx = 8;
     InitPieGraphic(fb);
 
     return fb;

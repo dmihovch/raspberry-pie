@@ -1,5 +1,7 @@
 #include <ncurses.h>
 #include <stdlib.h>
+#include <pthread.h>
+
 
 
 typedef struct {
@@ -24,3 +26,4 @@ FrameBuffer* InitPieFrameBuffer();
 void DrawPie(FrameBuffer*);
 void InitPieGraphic(FrameBuffer*);
 void ClosePieGraphic();
+uint16_t PieCreateColor(int,int,int);

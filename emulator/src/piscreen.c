@@ -1,5 +1,7 @@
 #include "../include/piscreen.h"
-#include <ncurses.h>
+
+
+int nextColorIdx = 8;
 
 
 

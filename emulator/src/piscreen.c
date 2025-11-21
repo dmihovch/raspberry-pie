@@ -103,10 +103,11 @@ void InitPieGraphic(FrameBuffer* fb){
 void ClosePieGraphic(){
 
 	//some of these calls are probably redundant
+	use_default_colors();
     endwin();
     reset_shell_mode();
-    reset_color_pairs();
-    use_default_colors();
+    //reset_color_pairs();
+
 
 }
 

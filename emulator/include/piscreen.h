@@ -1,8 +1,13 @@
+
+#pragma once
+
+#include "picolors.h"
 #include <ncurses.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <stdint.h>
 
-#include "../include/picolors.h"
+
 
 
 typedef struct {

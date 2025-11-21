@@ -1,4 +1,4 @@
-#include <cstdint>
+#pragma once
 #include <stdint.h>
 
 typedef enum {RGB255=0, RGB565, CURSES} ColorType;

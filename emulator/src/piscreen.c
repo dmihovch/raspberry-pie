@@ -1,10 +1,9 @@
 #include "../include/piscreen.h"
 
+static FrameBuffer fb;
 
 
-
-
-void PieSetPixel(FrameBuffer* fb, int x, int y, int r, int g, int b){
+void PieSetPixel(int x, int y, int r, int g, int b){
 
 
 	//?
@@ -13,25 +12,25 @@ void PieSetPixel(FrameBuffer* fb, int x, int y, int r, int g, int b){
     gScaled = (g * 1000) / 255;
     bScaled = (b * 1000) / 255;
 
-    xGrid = fb->pixels[x][y].x;
-    yGrid = fb->pixels[x][y].y;
+    xGrid = fb.pixels[x][y].x;
+    yGrid = fb.pixels[x][y].y;
 
 
 
     //I'm thinking this is going to be incorrect once I implement the color hashing
     //Unless it becomes a performance issue, I'm just going to have the colors overwrite eachother
-    init_color(fb->nextColorIdx, rScaled, gScaled, bScaled);
-    init_pair(fb->nextColorIdx, fb->nextColorIdx, COLOR_BLACK);
-    attron(COLOR_PAIR(fb->nextColorIdx));
+    init_color(fb.nextColorIdx, rScaled, gScaled, bScaled);
+    init_pair(fb.nextColorIdx, fb.nextColorIdx, COLOR_BLACK);
+    attron(COLOR_PAIR(fb.nextColorIdx));
     mvaddch(yGrid,xGrid,'*');
-    attroff(COLOR_PAIR(fb->nextColorIdx));
+    attroff(COLOR_PAIR(fb.nextColorIdx));
     refresh();
 
 
 
 }
 
-FrameBuffer* InitPieFrameBuffer(){
+int InitPieFrameBuffer(){
 
     initscr();
     noecho();
@@ -46,16 +45,16 @@ FrameBuffer* InitPieFrameBuffer(){
 
 
 
-    FrameBuffer* fb = calloc(1,sizeof(FrameBuffer));
-    if(fb == NULL) return NULL;
 
-    fb->nextColorIdx = 8;
-    InitPieGraphic(fb);
+    for(int i = 0; i<256; i++) fb.colorsCache[i] = NULL;
 
-    return fb;
+    fb.nextColorIdx = 8;
+    InitPieGraphic();
+
+
 }
 
-void InitPieGraphic(FrameBuffer* fb){
+int InitPieGraphic(){
 
 
     int Xmax = getmaxx(stdscr);
@@ -79,8 +78,8 @@ void InitPieGraphic(FrameBuffer* fb){
             mvaddch(start_y + y * 2 + 1, start_x + x * 4, '|');
             mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 1, ' ');
             mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 2, ' ');
-            fb->pixels[x][y].x = (start_x+x*4+2);
-            fb->pixels[x][y].y = (start_y+y*2+1);
+            fb.pixels[x][y].x = (start_x+x*4+2);
+            fb.pixels[x][y].y = (start_y+y*2+1);
             mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 3, ' ');
         }
         mvaddch(start_y + y * 2 + 1, start_x + 32, '|');
@@ -100,7 +99,14 @@ void InitPieGraphic(FrameBuffer* fb){
 
 }
 
-void ClosePieGraphic(){
+int ClosePieGraphic(){
+
+
+    for(int i = 0; i<256; i++){
+        while(fb.colorsCache[i]!=NULL){
+
+        }
+    }
 
 	//some of these calls are probably redundant
 	use_default_colors();
@@ -111,7 +117,7 @@ void ClosePieGraphic(){
 
 }
 
-void DrawPie(FrameBuffer* fb){
+int DrawPie(){
 
 
 

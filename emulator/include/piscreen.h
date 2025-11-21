@@ -13,7 +13,7 @@
 typedef struct {
     int x;
     int y;
-    uint16_t color;
+    ColorRaw color;
 } EmulatedPixel;
 
 typedef struct {
@@ -29,8 +29,8 @@ typedef struct {
  * g
  * b
  */
-void PieSetPixel(FrameBuffer*, int, int, int, int, int);
-FrameBuffer* InitPieFrameBuffer();
-void DrawPie(FrameBuffer*);
-void InitPieGraphic(FrameBuffer*);
-void ClosePieGraphic();
+int PieSetPixel(int, int, int, int, int);
+int InitPieFrameBuffer();
+int DrawPie();
+int InitPieGraphic();
+int ClosePieGraphic();

@@ -3,27 +3,26 @@
 static FrameBuffer fb;
 
 
-int PieSetPixel(int x, int y, int r, int g, int b){
+int PieSetPixel(int x, int y, ColorRaw color){
 
 
 	//?
-    int rScaled, gScaled, bScaled, xGrid, yGrid;
-    rScaled = (r * 1000) / 255;
-    gScaled = (g * 1000) / 255;
-    bScaled = (b * 1000) / 255;
+    int rScaled = color.r;
+    int gScaled = color.g;
+    int bScaled = color.b;
 
-    xGrid = fb.pixels[x][y].x;
-    yGrid = fb.pixels[x][y].y;
+    int xGrid = fb.pixels[x][y].x;
+    int yGrid = fb.pixels[x][y].y;
 
 
 
     //I'm thinking this is going to be incorrect once I implement the color hashing
     //Unless it becomes a performance issue, I'm just going to have the colors overwrite eachother
-    init_color(fb.nextColorIdx, rScaled, gScaled, bScaled);
-    init_pair(fb.nextColorIdx, fb.nextColorIdx, COLOR_BLACK);
-    attron(COLOR_PAIR(fb.nextColorIdx));
+    init_color(fb.nextCursesColorIdx, rScaled, gScaled, bScaled);
+    init_pair(fb.nextCursesColorIdx, fb.nextCursesColorIdx, COLOR_BLACK);
+    attron(COLOR_PAIR(fb.nextCursesColorIdx));
     mvaddch(yGrid,xGrid,'*');
-    attroff(COLOR_PAIR(fb.nextColorIdx));
+    attroff(COLOR_PAIR(fb.nextCursesColorIdx));
     refresh();
 
     return 0;
@@ -48,10 +47,22 @@ int InitPieFrameBuffer(){
 
     for(int i = 0; i<256; i++) fb.colorsCache[i] = NULL;
 
-    fb.nextColorIdx = 8;
+    fb.nextCursesColorIdx = 8;
     InitPieGraphic();
 
     return 0;
+}
+
+int HandleGetColor(ColorRaw color){
+
+    //NEED TO HANDLE THIS!!!!
+    if(fb.nextCursesColorIdx > 255){
+        FindCloseColor(color);
+
+
+        return -1;
+    }
+    return AddColorToCache(color);
 }
 
 int InitPieGraphic(){
@@ -131,9 +142,50 @@ int DrawPie(){
 
 
 int AddColorToCache(ColorRaw color){
-    int hash = color.rgb565&256;
+    int hash = ColorHash(color.rgb565);
+    if(fb.colorsCache[hash] == NULL){
+        fb.colorsCache[hash] = CreateColorCacheEntry(color, fb.nextCursesColorIdx);
+        if(fb.colorsCache[hash] == NULL){ return -1;}
+        fb.nextCursesColorIdx++;
+        return 0;
+    }
+
+    ColorCacheEntry* cur = fb.colorsCache[hash];
+    while(cur->next){
+        cur = cur->next;
+    }
+    cur->next = CreateColorCacheEntry(color, fb.nextCursesColorIdx);
+    if(cur->next == NULL){
+        return -1;
+    }
+    fb.nextCursesColorIdx++;
+    return 0;
 }
 
+ColorRaw FindCloseColor(ColorRaw color){
+    return color;
+}
+
+
+int GetNcursesColorID(ColorRaw color){
+    int hash = ColorHash(color.rgb565);
+
+    ColorCacheEntry* cur = fb.colorsCache[hash];
+    while(cur){
+        if(cur->color.rgb565 == color.rgb565){
+            return cur->cursesColorIdx;
+        }
+        cur = cur->next;
+    }
+
+    //gonna have to address this
+    return 8;
+
+}
+
+int ColorHash(uint16_t color){
+    return color%256;
+}
 
 void PieDebug(){
     for(int i = 0; i<8; i++){

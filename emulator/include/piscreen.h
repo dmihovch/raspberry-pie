@@ -29,12 +29,14 @@ typedef struct {
  * g
  * b
  */
-int PieSetPixel(int, int, int, int, int);
+int PieSetPixel(int, int, ColorRaw);
 int InitPieFrameBuffer();
 int DrawPie();
 int InitPieGraphic();
 int ClosePieGraphic();
 int AddColorToCache(ColorRaw);
-
-
+ColorRaw FindCloseColor(ColorRaw);
+int HandleGetColor(ColorRaw);
+int ColorHash(uint16_t);
+//util functions
 void PieDebug();

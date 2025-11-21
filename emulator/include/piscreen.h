@@ -19,7 +19,7 @@ typedef struct {
 typedef struct {
     EmulatedPixel pixels[8][8];
     ColorCacheEntry* colorsCache[256];
-    int nextColorIdx;
+    int nextCursesColorIdx;
 } FrameBuffer;
 
 /*
@@ -34,3 +34,7 @@ int InitPieFrameBuffer();
 int DrawPie();
 int InitPieGraphic();
 int ClosePieGraphic();
+int AddColorToCache(ColorRaw);
+
+
+void PieDebug();

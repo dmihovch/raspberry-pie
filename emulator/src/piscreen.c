@@ -3,7 +3,7 @@
 static FrameBuffer fb;
 
 
-void PieSetPixel(int x, int y, int r, int g, int b){
+int PieSetPixel(int x, int y, int r, int g, int b){
 
 
 	//?
@@ -26,7 +26,7 @@ void PieSetPixel(int x, int y, int r, int g, int b){
     attroff(COLOR_PAIR(fb.nextColorIdx));
     refresh();
 
-
+    return 0;
 
 }
 
@@ -37,7 +37,7 @@ int InitPieFrameBuffer(){
     curs_set(0);
 
     if(!has_colors()){
-        return NULL;
+        return -1;
     }
     start_color();
 
@@ -51,7 +51,7 @@ int InitPieFrameBuffer(){
     fb.nextColorIdx = 8;
     InitPieGraphic();
 
-
+    return 0;
 }
 
 int InitPieGraphic(){
@@ -95,17 +95,22 @@ int InitPieGraphic(){
 
     refresh();
 
-
+    return 0;
 
 }
 
 int ClosePieGraphic(){
 
-
-    for(int i = 0; i<256; i++){
-        while(fb.colorsCache[i]!=NULL){
-
+    ColorCacheEntry* cur;
+    ColorCacheEntry* next;
+    for(int i = 0; fb.colorsCache[i]; i++){
+        cur = fb.colorsCache[i];
+        while(cur){
+            next = cur->next;
+            free(cur);
+            cur = next;
         }
+
     }
 
 	//some of these calls are probably redundant
@@ -114,12 +119,26 @@ int ClosePieGraphic(){
     reset_shell_mode();
     //reset_color_pairs();
 
-
+    return 0;
 }
 
 int DrawPie(){
 
 
 
+    return 0;
+}
 
+
+int AddColorToCache(ColorRaw color){
+    int hash = color.rgb565&256;
+}
+
+
+void PieDebug(){
+    for(int i = 0; i<8; i++){
+        for(int j = 0; j<8; j++){
+            printf("x:%d y:%d\n",fb.pixels[i][j].x,fb.pixels[i][j].y);
+        }
+    }
 }

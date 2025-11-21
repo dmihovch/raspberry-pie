@@ -20,13 +20,13 @@ ColorRaw CreateColorRaw(int r,int g,int b){
     return color;
 }
 
-ColorCacheEntry* CreateColorCacheEntry(ColorRaw color, int nextCursesIdx){
+ColorCacheEntry* CreateColorCacheEntry(ColorRaw color,int nextCursesColorIdx){
 
     ColorCacheEntry* cce = malloc(sizeof(ColorCacheEntry));
     if(cce == NULL) return NULL;
 
     cce->color = color;
-    cce->cursesColorIdx = nextCursesIdx;
+    cce->cursesColorIdx = nextCursesColorIdx;
     cce->next = NULL;
     return cce;
 

@@ -3,29 +3,21 @@
 static FrameBuffer fb;
 
 
-int PieSetPixel(int x, int y, ColorRaw color){
+void PieSetPixel(int x, int y, uint16_t color565){
 
 
 	//?
-    int rScaled = color.r;
-    int gScaled = color.g;
-    int bScaled = color.b;
-
     int xGrid = fb.pixels[x][y].x;
     int yGrid = fb.pixels[x][y].y;
 
+    //gonna have to rethink this... again
 
 
-    //I'm thinking this is going to be incorrect once I implement the color hashing
-    //Unless it becomes a performance issue, I'm just going to have the colors overwrite eachother
-    init_color(fb.nextCursesColorIdx, rScaled, gScaled, bScaled);
-    init_pair(fb.nextCursesColorIdx, fb.nextCursesColorIdx, COLOR_BLACK);
-    attron(COLOR_PAIR(fb.nextCursesColorIdx));
+    init_pair(cursesColorIdx-7, cursesColorIdx, COLOR_BLACK);
+    attron(COLOR_PAIR(cursesColorIdx-7));
     mvaddch(yGrid,xGrid,'*');
-    attroff(COLOR_PAIR(fb.nextCursesColorIdx));
+    attroff(COLOR_PAIR(cursesColorIdx-7));
     refresh();
-
-    return 0;
 
 }
 
@@ -48,9 +40,9 @@ int InitPieFrameBuffer(){
     for(int i = 0; i<256; i++) fb.colorsCache[i] = NULL;
 
     fb.nextCursesColorIdx = 8;
-    InitPieGraphic();
+    fb.killThread = 0;
+    return InitPieGraphic();
 
-    return 0;
 }
 
 int HandleGetColor(ColorRaw color){
@@ -106,6 +98,13 @@ int InitPieGraphic(){
 
     refresh();
 
+    pthread_t refreshThread;
+    if(pthread_create(&refreshThread, NULL, PieRefreshThread, NULL) != 0){
+        return 1;
+    }
+    fb.refreshThread = refreshThread;
+
+
     return 0;
 
 }
@@ -123,6 +122,8 @@ int ClosePieGraphic(){
         }
 
     }
+    fb.killThread = 1;
+    pthread_join(fb.refreshThread, NULL);
 
 	//some of these calls are probably redundant
 	use_default_colors();
@@ -145,9 +146,9 @@ int AddColorToCache(ColorRaw color){
     int hash = ColorHash(color.rgb565);
     if(fb.colorsCache[hash] == NULL){
         fb.colorsCache[hash] = CreateColorCacheEntry(color, fb.nextCursesColorIdx);
-        if(fb.colorsCache[hash] == NULL){ return -1;}
+        if(fb.colorsCache[hash] == NULL){ return CURSES_WHITE;}
         fb.nextCursesColorIdx++;
-        return 0;
+        return fb.nextCursesColorIdx -1;
     }
 
     ColorCacheEntry* cur = fb.colorsCache[hash];
@@ -156,14 +157,14 @@ int AddColorToCache(ColorRaw color){
     }
     cur->next = CreateColorCacheEntry(color, fb.nextCursesColorIdx);
     if(cur->next == NULL){
-        return -1;
+        return CURSES_WHITE;
     }
     fb.nextCursesColorIdx++;
-    return 0;
+    return fb.nextCursesColorIdx -1;
 }
 
-ColorRaw FindCloseColor(ColorRaw color){
-    return color;
+int FindCloseColor(ColorRaw color){
+    return CURSES_WHITE;
 }
 
 
@@ -178,13 +179,39 @@ int GetNcursesColorID(ColorRaw color){
         cur = cur->next;
     }
 
-    //gonna have to address this
-    return 8;
+    if(fb.nextCursesColorIdx < 256){
+        return AddColorToCache(color);
+    }
+
+    return FindCloseColor(color);
 
 }
 
 int ColorHash(uint16_t color){
     return color%256;
+}
+
+
+void* PieRefreshThread(void* payload){
+    int i;
+    int j;
+    while(!fb.killThread){
+
+        for(i = 0; i<8; i++){
+            for(j = 0; j<8; j++){
+                PieSetPixel(i,j,fb.userFB->bitmap->pixel[i][j]);
+            }
+        }
+
+
+    }
+
+    return NULL;
+
+}
+
+void SendUserFBtoGlobalState(pi_framebuffer_t* userFb){
+    fb.userFB = userFb;
 }
 
 void PieDebug(){

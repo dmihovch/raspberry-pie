@@ -7,7 +7,7 @@
 void PieSetPixel(FrameBuffer* fb, int x, int y, int r, int g, int b){
 
 
-
+	//?
     int rScaled, gScaled, bScaled, xGrid, yGrid;
     rScaled = (r * 1000) / 255;
     gScaled = (g * 1000) / 255;
@@ -16,12 +16,15 @@ void PieSetPixel(FrameBuffer* fb, int x, int y, int r, int g, int b){
     xGrid = fb->pixels[x][y].x;
     yGrid = fb->pixels[x][y].y;
 
+
+
+    //I'm thinking this is going to be incorrect once I implement the color hashing
     //Unless it becomes a performance issue, I'm just going to have the colors overwrite eachother
-    init_color(8, rScaled, gScaled, bScaled);
-    init_pair(8, 8, COLOR_BLACK);
-    attron(COLOR_PAIR(8));
+    init_color(fb->nextColorIdx, rScaled, gScaled, bScaled);
+    init_pair(fb->nextColorIdx, fb->nextColorIdx, COLOR_BLACK);
+    attron(COLOR_PAIR(fb->nextColorIdx));
     mvaddch(yGrid,xGrid,'*');
-    attroff(COLOR_PAIR(8));
+    attroff(COLOR_PAIR(fb->nextColorIdx));
     refresh();
 
 

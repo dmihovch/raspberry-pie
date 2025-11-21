@@ -2,12 +2,9 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+#include "../include/picolors.h"
 
-typedef struct ColorCacheEntry{
-	uint16_t color;
-	int cursesColorIdx;
-	struct ColorCacheEntry* next;
-}ColorCacheEntry;
+
 typedef struct {
     int x;
     int y;
@@ -32,4 +29,3 @@ FrameBuffer* InitPieFrameBuffer();
 void DrawPie(FrameBuffer*);
 void InitPieGraphic(FrameBuffer*);
 void ClosePieGraphic();
-uint16_t PieCreateColor(int,int,int);

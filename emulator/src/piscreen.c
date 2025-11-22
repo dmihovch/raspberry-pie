@@ -164,7 +164,7 @@ int InitPieGraphic(){
             mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 1, ' ');
             mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 2, ' ');
             state.pixels[x][y].x = (start_x+x*4+2);
-            state.pixels[x][y].y = (start_y+y*2+1);
+            state.pixels[x][y].y = (start_y+(7-y)*2+1);
             mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 3, ' ');
         }
         mvaddch(start_y + y * 2 + 1, start_x + 32, '|');
@@ -212,6 +212,7 @@ int ClosePieGraphic(){
     endwin();
     reset_shell_mode();
 
+    //escape codes to cleanup and reset the terminal
     printf("\033[0m\033[?25h");
     printf("\033]104\007");
     fflush(stdout);
@@ -223,11 +224,10 @@ void* PieRefreshThread(void* payload){
     int i;
     int j;
     while(!state.killThread){
-
+    	int x,y;
         for(i = 0; i<8; i++){
             for(j = 0; j<8; j++){
                 PieSetPixel(i,j,state.userFb->pixel[i][j]);
-
             }
         }
 
@@ -248,6 +248,37 @@ void SendUserFBtoGlobalState(sense_fb_bitmap_t* userFb){
 
 
 int FindCloseColorId(uint16_t color565){
+	if (state.nextColorIdx == 0) {
+        return 0;
+    }
+
+    int targetR = (color565 >> 11) & 0x1F;
+    int targetG = (color565 >> 5) & 0x3F;
+    int targetB = color565 & 0x1F;
+
+    int bestIdx = 0;
+    int minDistance = INT_MAX;
+
+    for (int i = 0; i < state.nextColorIdx && i < 256; i++) {
+        uint16_t cachedColor = state.colorCache[i];
+        int cachedR = (cachedColor >> 11) & 0x1F;
+        int cachedG = (cachedColor >> 5) & 0x3F;
+        int cachedB = cachedColor & 0x1F;
+
+        // Weighted distance (green gets more weight due to 6 bits)
+        int dr = targetR - cachedR;
+        int dg = targetG - cachedG;
+        int db = targetB - cachedB;
+        // Scale to account for different bit depths
+        int distance = (dr * dr) * 4 + (dg * dg) * 2 + (db * db) * 4;
+
+        if (distance < minDistance) {
+            minDistance = distance;
+            bestIdx = i;
+        }
+    }
+
+    return bestIdx;
 	return 0;
 }
 

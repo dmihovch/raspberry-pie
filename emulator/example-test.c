@@ -14,11 +14,11 @@ int main(){
 
 	uint16_t colors[4] = {red,purp,yellow,green};
 
-	for(int i = 0; i<4; i++){
+	fb->bitmap->pixel[0][0] = red;
+	fb->bitmap->pixel[0][7] = purp;
+	fb->bitmap->pixel[7][0] = yellow;
+	fb->bitmap->pixel[7][7] = green;
 
-		fb->bitmap->pixel[i][0] = colors[i];
-
-	}
 	sleep(4);
 	clearFrameBuffer(fb, 0);
 	freeFrameBuffer(fb);

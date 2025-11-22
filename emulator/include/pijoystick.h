@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 typedef struct {
-	int fd;
+	int _fd;
 	char name[256];
 } pi_joystick_t;
 

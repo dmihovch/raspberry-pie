@@ -9,12 +9,8 @@
 
 
 //Libsense Wrapper Functions and Structs
-
-
-
-
 typedef struct {
-    char id[16];
+    char _id[16];
     char _padding[256];
 } fb_fix_screeninfo;
 
@@ -23,8 +19,8 @@ typedef struct {
 } sense_fb_bitmap_t;
 
 typedef struct {
-    int fd;
-	fb_fix_screeninfo info;
+    int _fd;
+	fb_fix_screeninfo _info;
 	sense_fb_bitmap_t* bitmap;
 } pi_framebuffer_t;
 
@@ -39,6 +35,14 @@ uint16_t getColor(int red,int green,int blue);
 //Emulator Functions and Structs
 
 typedef struct {
+    int r;
+    int g;
+    int b;
+    int saved;
+} SavedColor;
+
+
+typedef struct {
     int x;
     int y;
     uint16_t color565;
@@ -51,6 +55,8 @@ typedef struct {
     int nextColorIdx;
     pthread_t refreshThread;
     int killThread;
+    SavedColor origColors[256];
+    int maxColors;
 } State;
 
 void PieSetPixel(int, int, uint16_t);
@@ -61,6 +67,8 @@ int ClosePieGraphic();
 void* PieRefreshThread(void*);
 void SendUserFBtoGlobalState(sense_fb_bitmap_t*);
 uint16_t RGB255toRGB565(int,int,int);
+void SaveOriginalColor(int);
+void RestoreOriginalColors();
 void PieDebug();
 
 //need to implement

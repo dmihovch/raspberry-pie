@@ -1,7 +1,7 @@
 
 
 all:
-	gcc -o emul emulator-main.c src/piscreen.c -lncurses -lpthread
+	gcc -o emul example-test.c src/piscreen.c -lncurses -lpthread
 
 run:
 	./emul

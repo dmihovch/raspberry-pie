@@ -1,3 +1,0 @@
-I don't think it will be possible to do the assembly version,
-unless we were able to install qemu on the UD servers to
-be able to run ARM binaries on x86

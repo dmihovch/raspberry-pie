@@ -1,0 +1,16 @@
+
+
+	This program displays the first initial of my first name ("D") for one second, and then is wiped blank, displays the first initial of my last 
+	name ("M") for one second, then wipes blank. This is achieved through basic C conditional statements and the help of the sense-hat library.
+	The leds are programmed by setting a certain pixel in a 2d array to a certain color.
+
+	To run the program:
+	
+	Compile using:
+	
+		cc -o dmihovch dmihovch.c -L ~/lib -I ~/include -lsense
+
+	Execute using:
+
+		./dmihovch
+

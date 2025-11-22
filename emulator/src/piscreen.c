@@ -265,11 +265,9 @@ int FindCloseColorId(uint16_t color565){
         int cachedG = (cachedColor >> 5) & 0x3F;
         int cachedB = cachedColor & 0x1F;
 
-        // Weighted distance (green gets more weight due to 6 bits)
         int dr = targetR - cachedR;
         int dg = targetG - cachedG;
         int db = targetB - cachedB;
-        // Scale to account for different bit depths
         int distance = (dr * dr) * 4 + (dg * dg) * 2 + (db * db) * 4;
 
         if (distance < minDistance) {
@@ -304,15 +302,11 @@ void SaveOriginalColor(int colorId) {
         state.origColors[colorId].b = b;
         state.origColors[colorId].saved = 1;
     } else {
-        // If we can't read it, don't mark it as saved
-        // This prevents trying to restore a color we couldn't read
         state.origColors[colorId].saved = 0;
     }
 }
 
 void RestoreOriginalColors() {
-    // This function might not be needed if we restore in ClosePieGraphic directly
-    // But keeping it for consistency
     if (state.maxColors <= 0) {
         return;
     }

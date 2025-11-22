@@ -1,24 +1,108 @@
 #include "../include/piscreen.h"
+#include <ncurses.h>
 
-static FrameBuffer fb;
+
+//Libsense Wrapper Functions
+
+uint16_t getColor(int red, int green, int blue){
+    uint16_t color = RGB255toRGB565(red, green, blue);
+
+    return color;
+}
+
+pi_framebuffer_t* getFrameBuffer(){
+
+    sense_fb_bitmap_t* bm = calloc(1,sizeof(sense_fb_bitmap_t));
+    if(bm == NULL){
+        return NULL;
+    }
+
+    pi_framebuffer_t* ufb = calloc(1,sizeof(pi_framebuffer_t));
+    if(ufb == NULL){
+        free(bm);
+        return NULL;
+    }
+    ufb->bitmap = bm;
+
+    SendUserFBtoGlobalState(bm);
+    if(InitPieFrameBuffer()!=0){
+        free(ufb->bitmap);
+        free(ufb);
+        return NULL;
+    }
+
+    return ufb;
+
+}
+
+void clearFrameBuffer(pi_framebuffer_t* fb,uint16_t color){
+
+	int i,j;
+	for(i = 0;i<8;i++){
+		for(j=0;j<8;j++){
+			fb->bitmap->pixel[i][j] = color;
+		}
+	}
+
+
+}
+
+void freeFrameBuffer(pi_framebuffer_t *device){
+	free(device->bitmap);
+	free(device);
+	ClosePieGraphic();
+}
+
+
+
+
+//Emulator Functions
+
+
+static State state;
 
 
 void PieSetPixel(int x, int y, uint16_t color565){
+	int xEmulated = state.pixels[x][y].x;
+    int yEmulated = state.pixels[x][y].y;
+	if(color565 == 0){
+		mvaddch(yEmulated,xEmulated,' ');
+		return;
+	}
 
 
-	//?
-    int xGrid = fb.pixels[x][y].x;
-    int yGrid = fb.pixels[x][y].y;
-
-    //gonna have to rethink this... again
 
 
-    init_pair(cursesColorIdx-7, cursesColorIdx, COLOR_BLACK);
-    attron(COLOR_PAIR(cursesColorIdx-7));
-    mvaddch(yGrid,xGrid,'*');
-    attroff(COLOR_PAIR(cursesColorIdx-7));
-    refresh();
+	int colorId = -1;
+	int i;
+	for(i = 0; i<state.nextColorIdx; i++){
+		if(color565 == state.colorCache[i]){
+			colorId = i;
+			break;
+		}
+	}
 
+	if(state.nextColorIdx > 255){
+		colorId = FindCloseColorId(color565);
+	}
+
+
+	if(colorId == -1 && state.nextColorIdx <= 255){
+		state.colorCache[state.nextColorIdx] = color565;
+
+
+		int r = ((((color565 >> 11) & 0x1F) * 1000 + 15) / 31);
+		int g = ((((color565 >> 5) & 0x3F) * 1000 + 31)/ 63);
+		int b = (((color565 & 0x1F) * 1000 + 15)/ 31);
+		init_color(state.nextColorIdx, r, g, b);
+		init_pair(state.nextColorIdx,state.nextColorIdx,-1);
+		colorId = state.nextColorIdx;
+		state.nextColorIdx++;
+	}
+
+    attron(COLOR_PAIR(colorId));
+    mvaddch(yEmulated,xEmulated,'*');
+    attroff(COLOR_PAIR(colorId));
 }
 
 int InitPieFrameBuffer(){
@@ -26,35 +110,18 @@ int InitPieFrameBuffer(){
     initscr();
     noecho();
     curs_set(0);
+    use_default_colors();
 
     if(!has_colors()){
         return -1;
     }
+
+
     start_color();
-
-
-
-
-
-
-    for(int i = 0; i<256; i++) fb.colorsCache[i] = NULL;
-
-    fb.nextCursesColorIdx = 8;
-    fb.killThread = 0;
+    state.nextColorIdx = 1;
+    state.killThread = 0;
     return InitPieGraphic();
 
-}
-
-int HandleGetColor(ColorRaw color){
-
-    //NEED TO HANDLE THIS!!!!
-    if(fb.nextCursesColorIdx > 255){
-        FindCloseColor(color);
-
-
-        return -1;
-    }
-    return AddColorToCache(color);
 }
 
 int InitPieGraphic(){
@@ -81,8 +148,8 @@ int InitPieGraphic(){
             mvaddch(start_y + y * 2 + 1, start_x + x * 4, '|');
             mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 1, ' ');
             mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 2, ' ');
-            fb.pixels[x][y].x = (start_x+x*4+2);
-            fb.pixels[x][y].y = (start_y+y*2+1);
+            state.pixels[x][y].x = (start_x+x*4+2);
+            state.pixels[x][y].y = (start_y+y*2+1);
             mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 3, ' ');
         }
         mvaddch(start_y + y * 2 + 1, start_x + 32, '|');
@@ -102,7 +169,7 @@ int InitPieGraphic(){
     if(pthread_create(&refreshThread, NULL, PieRefreshThread, NULL) != 0){
         return 1;
     }
-    fb.refreshThread = refreshThread;
+    state.refreshThread = refreshThread;
 
 
     return 0;
@@ -111,22 +178,12 @@ int InitPieGraphic(){
 
 int ClosePieGraphic(){
 
-    ColorCacheEntry* cur;
-    ColorCacheEntry* next;
-    for(int i = 0; fb.colorsCache[i]; i++){
-        cur = fb.colorsCache[i];
-        while(cur){
-            next = cur->next;
-            free(cur);
-            cur = next;
-        }
-
-    }
-    fb.killThread = 1;
-    pthread_join(fb.refreshThread, NULL);
+    state.killThread = 1;
+    pthread_join(state.refreshThread, NULL);
 
 	//some of these calls are probably redundant
-	use_default_colors();
+	//use_default_colors();
+	curs_set(1);
     endwin();
     reset_shell_mode();
     //reset_color_pairs();
@@ -134,74 +191,20 @@ int ClosePieGraphic(){
     return 0;
 }
 
-int DrawPie(){
-
-
-
-    return 0;
-}
-
-
-int AddColorToCache(ColorRaw color){
-    int hash = ColorHash(color.rgb565);
-    if(fb.colorsCache[hash] == NULL){
-        fb.colorsCache[hash] = CreateColorCacheEntry(color, fb.nextCursesColorIdx);
-        if(fb.colorsCache[hash] == NULL){ return CURSES_WHITE;}
-        fb.nextCursesColorIdx++;
-        return fb.nextCursesColorIdx -1;
-    }
-
-    ColorCacheEntry* cur = fb.colorsCache[hash];
-    while(cur->next){
-        cur = cur->next;
-    }
-    cur->next = CreateColorCacheEntry(color, fb.nextCursesColorIdx);
-    if(cur->next == NULL){
-        return CURSES_WHITE;
-    }
-    fb.nextCursesColorIdx++;
-    return fb.nextCursesColorIdx -1;
-}
-
-int FindCloseColor(ColorRaw color){
-    return CURSES_WHITE;
-}
-
-
-int GetNcursesColorID(ColorRaw color){
-    int hash = ColorHash(color.rgb565);
-
-    ColorCacheEntry* cur = fb.colorsCache[hash];
-    while(cur){
-        if(cur->color.rgb565 == color.rgb565){
-            return cur->cursesColorIdx;
-        }
-        cur = cur->next;
-    }
-
-    if(fb.nextCursesColorIdx < 256){
-        return AddColorToCache(color);
-    }
-
-    return FindCloseColor(color);
-
-}
-
-int ColorHash(uint16_t color){
-    return color%256;
-}
-
-
 void* PieRefreshThread(void* payload){
     int i;
     int j;
-    while(!fb.killThread){
+    while(!state.killThread){
 
         for(i = 0; i<8; i++){
             for(j = 0; j<8; j++){
-                PieSetPixel(i,j,fb.userFB->bitmap->pixel[i][j]);
+                PieSetPixel(i,j,state.userFb->pixel[i][j]);
+
             }
         }
+
+        refresh();
+        usleep(16667);
 
 
     }
@@ -210,14 +213,30 @@ void* PieRefreshThread(void* payload){
 
 }
 
-void SendUserFBtoGlobalState(pi_framebuffer_t* userFb){
-    fb.userFB = userFb;
+void SendUserFBtoGlobalState(sense_fb_bitmap_t* userFb){
+    state.userFb = userFb;
+}
+
+
+
+int FindCloseColorId(uint16_t color565){
+	return 0;
+}
+
+
+
+uint16_t RGB255toRGB565(int r,int g,int b){
+    //ripped straight from libsense
+    r=(float)r / 255.0 * 31.0 + 0.5;
+	g=(float)g/ 255.0 * 63.0 + 0.5;
+	b=(float)b / 255.0 * 31.0 + 0.5;
+	return r<<11|g<<5|b;
 }
 
 void PieDebug(){
     for(int i = 0; i<8; i++){
         for(int j = 0; j<8; j++){
-            printf("x:%d y:%d\n",fb.pixels[i][j].x,fb.pixels[i][j].y);
+            printf("x:%d y:%d\n",state.pixels[i][j].x,state.pixels[i][j].y);
         }
     }
 }

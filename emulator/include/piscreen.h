@@ -1,46 +1,67 @@
 
 #pragma once
-
-#include "picolors.h"
 #include <ncurses.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <stdint.h>
-#define CURSES_WHITE 7
-#include "../../func-wrappers-c/include/framebuffer-pie.h"
+#include <unistd.h>
 
 
+
+//Libsense Wrapper Functions and Structs
+
+
+
+
+typedef struct {
+    char id[16];
+    char _padding[256];
+} fb_fix_screeninfo;
+
+typedef struct {
+	uint16_t pixel[8][8];
+} sense_fb_bitmap_t;
+
+typedef struct {
+    int fd;
+	fb_fix_screeninfo info;
+	sense_fb_bitmap_t* bitmap;
+} pi_framebuffer_t;
+
+
+
+pi_framebuffer_t* getFrameBuffer();
+void freeFrameBuffer(pi_framebuffer_t* device);
+void clearFrameBuffer(pi_framebuffer_t* fb,uint16_t color);
+uint16_t getColor(int red,int green,int blue);
+
+
+//Emulator Functions and Structs
 
 typedef struct {
     int x;
     int y;
-    ColorRaw color;
+    uint16_t color565;
 } EmulatedPixel;
 
 typedef struct {
     EmulatedPixel pixels[8][8];
-    ColorCacheEntry* colorsCache[256];
-    int nextCursesColorIdx;
-    pi_framebuffer_t* userFB;
+    sense_fb_bitmap_t* userFb;
+    uint16_t colorCache[256];
+    int nextColorIdx;
     pthread_t refreshThread;
     int killThread;
-} FrameBuffer;
+} State;
 
-/*
- * x
- * y
- * cursesColorIdx
- */
 void PieSetPixel(int, int, uint16_t);
 int InitPieFrameBuffer();
 int DrawPie();
 int InitPieGraphic();
 int ClosePieGraphic();
-int AddColorToCache(ColorRaw);
-int FindCloseColor(ColorRaw);
-int HandleGetColor(ColorRaw);
-int ColorHash(uint16_t);
 void* PieRefreshThread(void*);
-void SendUserFBtoGlobalState(pi_framebuffer_t*);
-//util functions
+void SendUserFBtoGlobalState(sense_fb_bitmap_t*);
+uint16_t RGB255toRGB565(int,int,int);
 void PieDebug();
+
+//need to implement
+int FindCloseColorId(uint16_t);

@@ -9,3 +9,7 @@ test and develop without the hassle of the actual hardware, and then link
 the same program against the Libsense library in order to test and develop
 on the pi itself. The only two dependecies outside the C standard library
 are pthreads and ncurses.
+
+This project is a work in progress, and has some limitations that
+(potentially) won't be able to be circumvented. This library should only
+be used for quick testing or on the go development.

@@ -1,0 +1,6 @@
+#!/usr/bin/env  bash
+
+
+PROGRAM=$@
+
+gcc -o bin/pie $PROGRAM src/piscreen.c -lncurses -pthread -lm

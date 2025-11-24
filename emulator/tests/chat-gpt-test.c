@@ -1,4 +1,4 @@
-#include "include/piscreen.h"
+#include "../lib/piemulator.h"
 #include <math.h>
 #include <unistd.h>
 

@@ -1,5 +1,4 @@
 #include "scroll.h"
-
 int vX = 0;
 int vY = 0;
 
@@ -15,6 +14,7 @@ int main(void){
 	while(running){
 		check_input(handler,100);
 		display_letter(currentLetter,vX,vY);
+		usleep(30000);
 	}
 	clear_display();
 	close_input();

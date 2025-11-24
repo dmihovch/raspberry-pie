@@ -13,3 +13,15 @@ are pthreads and ncurses.
 This project is a work in progress, and has some limitations that
 (potentially) won't be able to be circumvented. This library should only
 be used for quick testing or on the go development.
+
+
+
+TODO:
+
+1. Figure out if it is pixel[y][x] or pixel[x][y]
+2. Simulate segfault on out-of-bounds pixel writes(?(idk if this will be possible))
+3. Refactor so that library functions all start with 'Pie'
+4. Refactor so that the only functions/structs/definitions expose to user are the Libsense-compliant ones
+5. Make a build script that isn't terrible, compiling these programs is annoying
+6. Do some real, honest to god testing
+7. Then do some real, hones to god stress testing

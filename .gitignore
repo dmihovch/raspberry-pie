@@ -55,4 +55,4 @@ dkms.conf
 *.dwo
 
 *.DS_Store
-emulator/emul
+emulator/bin/*

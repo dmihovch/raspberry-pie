@@ -1,8 +1,14 @@
-#include "../include/piscreen.h"
+#include "piemulator.h"
 #include <ncurses.h>
+/*
+ *
+ *
+ * Libsense Wrapper Functions
+ *
+ *
+ */
 
-
-//Libsense Wrapper Functions
+//Framebuffer Wrapper Functions
 
 uint16_t getColor(int red, int green, int blue){
     uint16_t color = RGB255toRGB565(red, green, blue);
@@ -54,13 +60,64 @@ void freeFrameBuffer(pi_framebuffer_t *device){
 }
 
 
+//Joystick Wrapper Functions and Definition
+
+#define JOY_KEY_ENTER 28
+#define JOY_KEY_UP 103
+#define JOY_KEY_DOWN 108
+#define JOY_KEY_RIGHT 106
+#define JOY_KEY_LEFT 105
+
+pi_joystick_t* getJoystickDevice(){
+
+	//will probably need more than this
+	pi_joystick_t* js =  calloc(1,sizeof(pi_joystick_t));
+	if(js == NULL){
+		return NULL;
+	}
+
+	if(PieInitJoystick()!=0){
+		free(js);
+		return NULL;
+	}
+
+	return js;
 
 
-//Emulator Functions
+}
+
+void freeJoystick(pi_joystick_t *device){
+	if(device == NULL) return;
+	free(device);
+	PieCloseJoystick();
+}
+
+void pollJoystick(pi_joystick_t *device, void (*callback)(unsigned int), int timeout){
+	int code = PieGetJoystickValue();
+	//I don't use the timeout here, that may become a problem
+	if(code == -1)return;
+	callback(code);
+}
 
 
+
+
+/*
+ *
+ *
+ * Emulator Functions and Global State
+ *
+ *
+ */
+
+
+#define REFRESH60 16667
+#define KEY_NEWLINE 10
 static State state;
 
+
+
+//Framebuffer Wrappers and Definitions
 
 void PieSetPixel(int x, int y, uint16_t color565){
 	int xEmulated = state.pixels[x][y].x;
@@ -102,7 +159,7 @@ void PieSetPixel(int x, int y, uint16_t color565){
 	}
 
     attron(COLOR_PAIR(colorId));
-    mvaddch(yEmulated,xEmulated,'*');
+    mvaddch(yEmulated,xEmulated,'@');
     attroff(COLOR_PAIR(colorId));
 }
 
@@ -110,6 +167,7 @@ int InitPieFrameBuffer(){
 
     initscr();
     noecho();
+    cbreak();
     curs_set(0);
 
     if(!has_colors()){
@@ -221,6 +279,15 @@ int ClosePieGraphic(){
 }
 
 void* PieRefreshThread(void* payload){
+	/*
+	 *
+	 *
+	 *	Going to have to ask Roosen about this,
+	 *  but I think the grid is supposed to be laid out as
+	 *  pixel[y][x] not pixel[x][y]
+	 *
+	 *
+	 */
     int i;
     int j;
     while(!state.killThread){
@@ -232,7 +299,7 @@ void* PieRefreshThread(void* payload){
         }
 
         refresh();
-        usleep(16667);
+        usleep(REFRESH60);
 
 
     }
@@ -318,10 +385,88 @@ void RestoreOriginalColors() {
     }
 }
 
+
+
+//Joystick Functions
+
+int PieInitJoystick(){
+	keypad(stdscr, TRUE);
+	pthread_mutex_init(&state.joystickPipe.lock, NULL);
+	state.killJoystickThread = 0;
+	pthread_t jsThread;
+    if(pthread_create(&jsThread, NULL, PieJoystickThread, NULL) != 0){
+        return 1;
+    }
+    state.joystickPollingThread = jsThread;
+	return 0;
+}
+
+
+void PieCloseJoystick(){
+	state.killJoystickThread = 1;
+	pthread_join(state.joystickPollingThread,NULL);
+}
+
+int PieGetJoystickValue(){
+	int code;
+	pthread_mutex_lock(&state.joystickPipe.lock);
+	if(state.joystickPipe.read) {
+		pthread_mutex_unlock(&state.joystickPipe.lock);
+		return -1;
+	}
+	code = state.joystickPipe.keyCode;
+	state.joystickPipe.read = 1;
+	pthread_mutex_unlock(&state.joystickPipe.lock);
+	return code;
+}
+
+
+void* PieJoystickThread(void* payload){
+	int ch,send;
+	while(!state.killJoystickThread){
+		ch = getch();
+		send = 0;
+		switch(ch){
+			case KEY_UP: {ch = JOY_KEY_UP; send = 1; break;}
+			case KEY_DOWN: {ch = JOY_KEY_DOWN; send = 1; break;}
+			case KEY_RIGHT: {ch = JOY_KEY_RIGHT; send = 1; break;}
+			case KEY_LEFT: {ch = JOY_KEY_LEFT; send = 1; break;}
+			case KEY_NEWLINE: {ch = JOY_KEY_ENTER; send = 1; break;}
+			case KEY_ENTER: {ch = JOY_KEY_ENTER; send = 1; break;}
+		}
+
+		if(send){
+			pthread_mutex_lock(&state.joystickPipe.lock);
+			state.joystickPipe.keyCode = ch;
+			state.joystickPipe.read = 0;
+			pthread_mutex_unlock(&state.joystickPipe.lock);
+		}
+
+		usleep(REFRESH60);
+
+	}
+
+	return NULL;
+
+}
+
+
+
+/*
+ *
+ *
+ * Debug and Util Functions
+ *
+ *
+ *
+ */
+
+
+
 void PieDebug(){
     for(int i = 0; i<8; i++){
         for(int j = 0; j<8; j++){
-            printf("x:%d y:%d\n",state.pixels[i][j].x,state.pixels[i][j].y);
+            fprintf(stderr,"x:%d y:%d\n",state.pixels[i][j].x,state.pixels[i][j].y);
         }
     }
 }

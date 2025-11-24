@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include "sense.h"
+#include "../../lib/piemulator.h"
 
 int open_display(void);
 void display_time(int,int,int);

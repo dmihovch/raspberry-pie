@@ -1,4 +1,15 @@
 #!/usr/bin/env  bash
+#
+#
+#
+# to use: ./build [path to program]
+#
+#
+#
+#
+#
+#
+
 
 
 PROGRAM=$@

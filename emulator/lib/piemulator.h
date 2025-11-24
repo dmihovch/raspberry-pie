@@ -1,6 +1,5 @@
 
 #pragma once
-#include <ncurses.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <stdint.h>
@@ -8,8 +7,21 @@
 #include <limits.h>
 
 
+/*
+ *
+ *
+ *
+ *
+ *  Libsense Wrapper Functions and Structs
+ *
+ *
+ *
+ *
+*/
 
-//Libsense Wrapper Functions and Structs
+
+//Framebuffer Wrappers and Structs
+
 typedef struct {
     char _id[16];
     char _padding[256];
@@ -33,7 +45,62 @@ void clearFrameBuffer(pi_framebuffer_t* fb,uint16_t color);
 uint16_t getColor(int red,int green,int blue);
 
 
-//Emulator Functions and Structs
+
+
+//Joystick Wrappers and Structs
+
+
+
+typedef struct {
+	int _fd;
+	char _name[256];
+} pi_joystick_t;
+
+pi_joystick_t* getJoystickDevice();
+void freeJoystick(pi_joystick_t* device);
+void pollJoystick(pi_joystick_t* device, void (*callback)(unsigned int code),int timeout);
+
+
+
+/*
+ *
+ *
+ *
+ *
+ * Emulator Functions and Structs
+ *
+ *
+ *
+ *
+ *
+ */
+
+
+
+
+//Joystick Functions and Structs
+
+#define KEY_ENTER 28
+#define KEY_UP 103
+#define KEY_DOWN 108
+#define KEY_RIGHT 106
+#define KEY_LEFT 105
+
+
+typedef struct {
+	int keyCode;
+	int read;
+	pthread_mutex_t lock;
+} JoystickPipeline;
+
+int PieInitJoystick();
+void PieCloseJoystick();
+int PieGetJoystickValue();
+void* PieJoystickThread(void*);
+
+
+
+//Framebuffer Functions and Structs
 
 typedef struct {
     int r;
@@ -58,6 +125,9 @@ typedef struct {
     int killThread;
     SavedColor origColors[256];
     int maxColors;
+    JoystickPipeline joystickPipe;
+    pthread_t joystickPollingThread;
+    int killJoystickThread;
 } State;
 
 void PieSetPixel(int, int, uint16_t);
@@ -70,7 +140,10 @@ void SendUserFBtoGlobalState(sense_fb_bitmap_t*);
 uint16_t RGB255toRGB565(int,int,int);
 void SaveOriginalColor(int);
 void RestoreOriginalColors();
-void PieDebug();
-
-//need to implement
 int FindCloseColorId(uint16_t);
+
+
+
+//Debug/Util Functions
+
+void PieDebug();

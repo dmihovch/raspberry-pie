@@ -4,10 +4,10 @@ all:
 	gcc -o emul example-test.c src/piscreen.c -lncurses -lpthread
 
 run:
-	./emul
+	./bin/pie
 
 clean:
-	rm emul
+	rm bin/pie
 
 valgrind:
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./emul

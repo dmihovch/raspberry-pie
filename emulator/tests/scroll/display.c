@@ -1,12 +1,11 @@
 #include "scroll.h"
-
 pi_framebuffer_t *fb = NULL;
 sense_fb_bitmap_t *bm = NULL;
 
 float m[22][2] = {
 	{0,0},{0,1},{0,2},{0,3},{0,4},{0,5},{0,6},{0,7},
 	{1,6},{2,5},{3,4},{4,4},{5,5},{6,6},{7,7},
-	{7,6},{7,5},{7,4},{7,3},{7,2},{7,1},{7,0}	
+	{7,6},{7,5},{7,4},{7,3},{7,2},{7,1},{7,0}
 };//x,y
 //I know this is all terrible. I hate it too
 float d[24][2] = {
@@ -54,5 +53,3 @@ float checkOffset(float off){
 	}
 	return ret;
 }
-
-

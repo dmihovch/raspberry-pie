@@ -128,15 +128,14 @@ typedef struct {
     JoystickPipeline joystickPipe;
     pthread_t joystickPollingThread;
     int killJoystickThread;
-} State;
+} PieState;
 
 void PieSetPixel(int, int, uint16_t);
-int InitPieFrameBuffer();
-int DrawPie();
-int InitPieGraphic();
-int ClosePieGraphic();
+int PieInitFrameBuffer();
+int PieInitGraphic();
+int PieCloseGraphic();
 void* PieRefreshThread(void*);
-void SendUserFBtoGlobalState(sense_fb_bitmap_t*);
+void PieUserFBtoState(sense_fb_bitmap_t*);
 uint16_t RGB255toRGB565(int,int,int);
 void SaveOriginalColor(int);
 void RestoreOriginalColors();

@@ -30,8 +30,8 @@ pi_framebuffer_t* getFrameBuffer(){
     }
     ufb->bitmap = bm;
 
-    SendUserFBtoGlobalState(bm);
-    if(InitPieFrameBuffer()!=0){
+    PieUserFBtoState(bm);
+    if(PieInitFrameBuffer()!=0){
         free(ufb->bitmap);
         free(ufb);
         return NULL;
@@ -56,7 +56,7 @@ void clearFrameBuffer(pi_framebuffer_t* fb,uint16_t color){
 void freeFrameBuffer(pi_framebuffer_t *device){
 	free(device->bitmap);
 	free(device);
-	ClosePieGraphic();
+	PieCloseGraphic();
 }
 
 
@@ -113,7 +113,7 @@ void pollJoystick(pi_joystick_t *device, void (*callback)(unsigned int), int tim
 
 #define REFRESH60 16667
 #define KEY_NEWLINE 10
-static State state;
+static PieState state;
 
 
 
@@ -163,7 +163,7 @@ void PieSetPixel(int x, int y, uint16_t color565){
     attroff(COLOR_PAIR(colorId));
 }
 
-int InitPieFrameBuffer(){
+int PieInitFrameBuffer(){
 
     initscr();
     noecho();
@@ -193,11 +193,11 @@ int InitPieFrameBuffer(){
     use_default_colors();
     state.nextColorIdx = 1;
     state.killThread = 0;
-    return InitPieGraphic();
+    return PieInitGraphic();
 
 }
 
-int InitPieGraphic(){
+int PieInitGraphic(){
 
 
     int Xmax = getmaxx(stdscr);
@@ -249,7 +249,7 @@ int InitPieGraphic(){
 
 }
 
-int ClosePieGraphic(){
+int PieCloseGraphic(){
 
     state.killThread = 1;
     pthread_join(state.refreshThread, NULL);
@@ -308,7 +308,7 @@ void* PieRefreshThread(void* payload){
 
 }
 
-void SendUserFBtoGlobalState(sense_fb_bitmap_t* userFb){
+void PieUserFBtoState(sense_fb_bitmap_t* userFb){
     state.userFb = userFb;
 }
 

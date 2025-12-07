@@ -1,5 +1,24 @@
-#include "piemulator.h"
+
 #include <ncurses.h>
+#include <stdio.h>
+
+static const int NC_KEY_UP = KEY_UP;
+static const int NC_KEY_DOWN = KEY_DOWN;
+static const int NC_KEY_LEFT = KEY_LEFT;
+static const int NC_KEY_RIGHT = KEY_RIGHT;
+static const int NC_KEY_ENTER = KEY_ENTER;
+
+
+#undef KEY_UP
+#undef KEY_DOWN
+#undef KEY_LEFT
+#undef KEY_RIGHT
+#undef KEY_ENTER
+
+
+
+#include "piemulator.h"
+
 /*
  *
  *
@@ -153,13 +172,13 @@ void PieSetPixel(int x, int y, uint16_t color565){
 		int b = (((color565 & 0x1F) * 1000 + 15)/ 31);
 		SaveOriginalColor(state.nextColorIdx);
 		init_color(state.nextColorIdx, r, g, b);
-		init_pair(state.nextColorIdx,state.nextColorIdx,-1);
+		init_pair(state.nextColorIdx,state.nextColorIdx,state.nextColorIdx);
 		colorId = state.nextColorIdx;
 		state.nextColorIdx++;
 	}
 
     attron(COLOR_PAIR(colorId));
-    mvaddch(yEmulated,xEmulated,'@');
+    mvaddch(yEmulated,xEmulated,' ');
     attroff(COLOR_PAIR(colorId));
 }
 
@@ -407,6 +426,10 @@ void PieCloseJoystick(){
 	pthread_join(state.joystickPollingThread,NULL);
 }
 
+
+
+
+
 int PieGetJoystickValue(){
 	int code;
 	pthread_mutex_lock(&state.joystickPipe.lock);
@@ -421,19 +444,19 @@ int PieGetJoystickValue(){
 }
 
 
+
 void* PieJoystickThread(void* payload){
 	int ch,send;
 	while(!state.killJoystickThread){
 		ch = getch();
 		send = 0;
-		switch(ch){
-			case KEY_UP: {ch = JOY_KEY_UP; send = 1; break;}
-			case KEY_DOWN: {ch = JOY_KEY_DOWN; send = 1; break;}
-			case KEY_RIGHT: {ch = JOY_KEY_RIGHT; send = 1; break;}
-			case KEY_LEFT: {ch = JOY_KEY_LEFT; send = 1; break;}
-			case KEY_NEWLINE: {ch = JOY_KEY_ENTER; send = 1; break;}
-			case KEY_ENTER: {ch = JOY_KEY_ENTER; send = 1; break;}
-		}
+
+	 	if(ch == NC_KEY_UP) {ch = JOY_KEY_UP; send = 1;}
+			else if(ch == NC_KEY_DOWN) {ch = JOY_KEY_DOWN; send =1;}
+			else if(ch == NC_KEY_LEFT) { ch = JOY_KEY_LEFT; send =1;}
+			else if(ch == NC_KEY_RIGHT) {ch = JOY_KEY_RIGHT; send =1;}
+			else if(ch == NC_KEY_ENTER || ch == '\n' || ch == '\r') {ch = JOY_KEY_ENTER; send = 1;}
+
 
 		if(send){
 			pthread_mutex_lock(&state.joystickPipe.lock);

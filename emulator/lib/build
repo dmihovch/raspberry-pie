@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+
+gcc -c piemulator.c -pthread -lncurses -o piemulator.o || exit 1
+
+ar rcs libpie.a piemulator.o || exit 1
+
+sudo cp libpie.a /usr/local/lib/ || exit 1
+
+rm piemulator.o
+
+echo "Done"

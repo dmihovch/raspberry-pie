@@ -1,10 +1,11 @@
 
-#pragma once
+#include <stdint.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <limits.h>
+
 
 
 /*
@@ -23,8 +24,8 @@
 //Framebuffer Wrappers and Structs
 
 typedef struct {
-    char _id[16];
-    char _padding[256];
+    char id[16];
+    char padding[256];
 } fb_fix_screeninfo;
 
 typedef struct {
@@ -32,8 +33,8 @@ typedef struct {
 } sense_fb_bitmap_t;
 
 typedef struct {
-    int _fd;
-	fb_fix_screeninfo _info;
+    int fd;
+	fb_fix_screeninfo info;
 	sense_fb_bitmap_t* bitmap;
 } pi_framebuffer_t;
 
@@ -49,7 +50,13 @@ uint16_t getColor(int red,int green,int blue);
 
 //Joystick Wrappers and Structs
 
-
+//these need to exist for the user, it is the joystick codes
+//The issue is that ncurses uses the same names for these Macros, but with different values
+#define KEY_ENTER 28
+#define KEY_UP 103
+#define KEY_DOWN 108
+#define KEY_RIGHT 106
+#define KEY_LEFT 105
 
 typedef struct {
 	int _fd;
@@ -59,6 +66,12 @@ typedef struct {
 pi_joystick_t* getJoystickDevice();
 void freeJoystick(pi_joystick_t* device);
 void pollJoystick(pi_joystick_t* device, void (*callback)(unsigned int code),int timeout);
+
+
+
+
+
+
 
 
 
@@ -80,11 +93,7 @@ void pollJoystick(pi_joystick_t* device, void (*callback)(unsigned int code),int
 
 //Joystick Functions and Structs
 
-#define KEY_ENTER 28
-#define KEY_UP 103
-#define KEY_DOWN 108
-#define KEY_RIGHT 106
-#define KEY_LEFT 105
+
 
 
 typedef struct {

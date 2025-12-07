@@ -1,4 +1,4 @@
-#include "../lib/piemulator.h"
+#include "../../lib/piemulator.h"
 #include <math.h>
 #include <unistd.h>
 

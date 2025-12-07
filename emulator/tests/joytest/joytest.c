@@ -1,4 +1,4 @@
-#include "../lib/piemulator.h"
+#include "../../lib/piemulator.h"
 #include <stdio.h>
 int x = 0;
 int y = 0;
@@ -16,14 +16,12 @@ int clamp(int coord){
 }
 
 void handler(unsigned int code){
-	fprintf(stderr,"code = %d\n",code);
 	switch(code){
 		case KEY_UP: {y = clamp(y+1); break;};
 	 	case KEY_DOWN:{ y = clamp(y-1); break;};
 		case KEY_LEFT:{ x = clamp(x-1);break;};
 		case KEY_RIGHT:{ x = clamp(x+1);break;};
 		case KEY_ENTER: {running = 0; break;}
-		fprintf(stderr,"running in handler %d\n", running);
 	}
 }
 
@@ -35,12 +33,18 @@ int main(){
 	if(fb == NULL || js == NULL){
 		return 1;
 	}
-	fprintf(stderr,"\n\n\nNEW START OF PROGRAM\n\n\n");
 
+	int oldX, oldY;
+
+	fb->bitmap->pixel[x][y] = 0xFFFF;
 	while(running){
+		oldX = x;
+		oldY = y;
 		pollJoystick(js, handler, 0);
-		fb->bitmap->pixel[x][y] = 0xFFFF;
-		fb->bitmap->pixel[x][y] = 0;
+		if(oldX != x || oldY != y){
+			clearFrameBuffer(fb,0);
+			fb->bitmap->pixel[x][y] = 0xFFFF;
+		}
 	}
 
 

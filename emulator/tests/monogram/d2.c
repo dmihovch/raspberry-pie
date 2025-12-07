@@ -13,24 +13,24 @@ int main(void){
 	for(i=0;i<8;i++){
 		bm->pixel[7][i]=WHITE;
 	}
-	bm->pixel[6][0]=WHITE;
-	bm->pixel[5][0]=WHITE;
-	bm->pixel[4][0]=WHITE;
-	bm->pixel[3][0]=WHITE;
-	bm->pixel[2][0]=WHITE;
+	bm->pixel[0][6]=WHITE;
+	bm->pixel[0][5]=WHITE;
+	bm->pixel[0][4]=WHITE;
+	bm->pixel[0][3]=WHITE;
+	bm->pixel[0][2]=WHITE;
 	
-	bm->pixel[6][7]=WHITE;
-	bm->pixel[5][7]=WHITE;
-	bm->pixel[4][7]=WHITE;
-	bm->pixel[3][7]=WHITE;
-	bm->pixel[2][7]=WHITE;
+	bm->pixel[7][6]=WHITE;
+	bm->pixel[7][5]=WHITE;
+	bm->pixel[7][4]=WHITE;
+	bm->pixel[7][3]=WHITE;
+	bm->pixel[7][2]=WHITE;
 
 	bm->pixel[1][1]=WHITE;
-	bm->pixel[0][2]=WHITE;
-	bm->pixel[0][5]=WHITE;
-	bm->pixel[1][6]=WHITE;
-	bm->pixel[0][3]=WHITE;
-	bm->pixel[0][4]=WHITE;
+	bm->pixel[2][0]=WHITE;
+	bm->pixel[5][0]=WHITE;
+	bm->pixel[6][1]=WHITE;
+	bm->pixel[3][0]=WHITE;
+	bm->pixel[4][0]=WHITE;
 	int nPhase = sleep(1);
 	if (nPhase == 0)
 	{

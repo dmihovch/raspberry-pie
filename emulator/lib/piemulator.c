@@ -1,6 +1,5 @@
 
 #include <ncurses.h>
-#include <stdio.h>
 
 static const int NC_KEY_UP = KEY_UP;
 static const int NC_KEY_DOWN = KEY_DOWN;

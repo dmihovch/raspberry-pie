@@ -1,22 +1,32 @@
-
-#include <ncurses.h>
-
-static const int NC_KEY_UP = KEY_UP;
-static const int NC_KEY_DOWN = KEY_DOWN;
-static const int NC_KEY_LEFT = KEY_LEFT;
-static const int NC_KEY_RIGHT = KEY_RIGHT;
-static const int NC_KEY_ENTER = KEY_ENTER;
-
-
-#undef KEY_UP
-#undef KEY_DOWN
-#undef KEY_LEFT
-#undef KEY_RIGHT
-#undef KEY_ENTER
-
-
-
 #include "piemulator.h"
+
+
+
+
+/*
+ *
+ *
+ * Private Definitions
+ *
+ *
+ *
+ */
+
+#define REFRESH60 16667
+#define KEY_NEWLINE 10
+
+
+
+/*
+ *
+ * Global State
+ *
+ *
+ */
+static PieState state;
+static struct termios originalTerm;
+
+
 
 /*
  *
@@ -28,9 +38,9 @@ static const int NC_KEY_ENTER = KEY_ENTER;
 
 //Framebuffer Wrapper Functions
 
+
 uint16_t getColor(int red, int green, int blue){
     uint16_t color = RGB255toRGB565(red, green, blue);
-
     return color;
 }
 
@@ -78,13 +88,8 @@ void freeFrameBuffer(pi_framebuffer_t *device){
 }
 
 
-//Joystick Wrapper Functions and Definition
+//Joystick Wrapper Functions
 
-#define JOY_KEY_ENTER 28
-#define JOY_KEY_UP 103
-#define JOY_KEY_DOWN 108
-#define JOY_KEY_RIGHT 106
-#define JOY_KEY_LEFT 105
 
 pi_joystick_t* getJoystickDevice(){
 
@@ -129,87 +134,31 @@ void pollJoystick(pi_joystick_t *device, void (*callback)(unsigned int), int tim
  */
 
 
-#define REFRESH60 16667
-#define KEY_NEWLINE 10
-static PieState state;
 
 
-
-//Framebuffer Wrappers and Definitions
+//FrameBuffer Emulator Functions
 
 void PieSetPixel(int x, int y, uint16_t color565){
+	/*
+	 * Thinking I'll probably want to cache colors in 255 form, so that we don't lose
+	 * so much color depth going from 255->565->255(8 bit)
+	 */
 	int xEmulated = state.pixels[x][y].x;
     int yEmulated = state.pixels[x][y].y;
+    CursorMove(yEmulated,xEmulated);
 	if(color565 == 0){
-		mvaddch(yEmulated,xEmulated,' ');
-		return;
+		printf("\033[0m ");
+        return;
 	}
-
-
-
-
-	int colorId = -1;
-	int i;
-	for(i = 0; i<state.nextColorIdx; i++){
-		if(color565 == state.colorCache[i]){
-			colorId = i;
-			break;
-		}
-	}
-
-	if(state.nextColorIdx > 255){
-		colorId = FindCloseColorId(color565);
-	}
-
-
-	if(colorId == -1 && state.nextColorIdx <= 255){
-		state.colorCache[state.nextColorIdx] = color565;
-
-
-		int r = ((((color565 >> 11) & 0x1F) * 1000 + 15) / 31);
-		int g = ((((color565 >> 5) & 0x3F) * 1000 + 31)/ 63);
-		int b = (((color565 & 0x1F) * 1000 + 15)/ 31);
-		SaveOriginalColor(state.nextColorIdx);
-		init_color(state.nextColorIdx, r, g, b);
-		init_pair(state.nextColorIdx,state.nextColorIdx,state.nextColorIdx);
-		colorId = state.nextColorIdx;
-		state.nextColorIdx++;
-	}
-
-    attron(COLOR_PAIR(colorId));
-    mvaddch(yEmulated,xEmulated,' ');
-    attroff(COLOR_PAIR(colorId));
+	int r = ((color565 >> 11) & 0x1F) * 255 / 31;
+    int g = ((color565 >> 5) & 0x3F) * 255 / 63;
+    int b = (color565 & 0x1F) * 255 / 31;
+    printf("\033[48;2;%d;%d;%dm ", r, g, b);
+    printf("\033[0m");
 }
 
 int PieInitFrameBuffer(){
-
-    initscr();
-    noecho();
-    cbreak();
-    curs_set(0);
-
-    if(!has_colors()){
-        endwin();
-        return -1;
-    }
-
-
-    start_color();
-
-    state.maxColors = COLORS;
-    if (state.maxColors > 256) {
-        state.maxColors = 256;
-    }
-
-    for (int i = 0; i < state.maxColors; i++) {
-        state.origColors[i].saved = 0;
-    }
-
-    for (int i = 0; i < state.maxColors; i++) {
-        SaveOriginalColor(i);
-    }
-    use_default_colors();
-    state.nextColorIdx = 1;
+	EnableRawMode();
     state.killThread = 0;
     return PieInitGraphic();
 
@@ -217,54 +166,19 @@ int PieInitFrameBuffer(){
 
 int PieInitGraphic(){
 
-
-    int Xmax = getmaxx(stdscr);
-    int Ymax = getmaxy(stdscr);
-
-    int lineHeight = 17;
-    int lineWidth = 33;
-    int start_y = (Ymax - lineHeight)/2;
-    int start_x = (Xmax - lineWidth)/2;
-
-    for (int y = 0; y < 8; y++) {
-        for (int x = 0; x < 8; x++) {
-            mvaddch(start_y + y * 2, start_x + x * 4, '+');
-            mvaddch(start_y + y * 2, start_x + x * 4 + 1, '-');
-            mvaddch(start_y + y * 2, start_x + x * 4 + 2, '-');
-            mvaddch(start_y + y * 2, start_x + x * 4 + 3, '-');
-        }
-        mvaddch(start_y + y * 2, start_x + 32, '+');
-
-        for (int x = 0; x < 8; x++) {
-            mvaddch(start_y + y * 2 + 1, start_x + x * 4, '|');
-            mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 1, ' ');
-            mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 2, ' ');
-            state.pixels[x][y].x = (start_x+x*4+2);
-            state.pixels[x][y].y = (start_y+(7-y)*2+1);
-            mvaddch(start_y + y * 2 + 1, start_x + x * 4 + 3, ' ');
-        }
-        mvaddch(start_y + y * 2 + 1, start_x + 32, '|');
-    }
-
-    for (int x = 0; x < 8; x++) {
-        mvaddch(start_y + 16, start_x + x * 4, '+');
-        mvaddch(start_y + 16, start_x + x * 4 + 1, '-');
-        mvaddch(start_y + 16, start_x + x * 4 + 2, '-');
-        mvaddch(start_y + 16, start_x + x * 4 + 3, '-');
-    }
-    mvaddch(start_y + 16, start_x + 32, '+');
-
-    refresh();
+	printf("\033[2J");
+	PieRedrawGraphic();
+	signal(SIGWINCH,HandleResize);
+    signal(SIGINT,  PieCleanExit);
+    signal(SIGQUIT, PieCleanExit);
+    signal(SIGTERM, PieCleanExit);
 
     pthread_t refreshThread;
     if(pthread_create(&refreshThread, NULL, PieRefreshThread, NULL) != 0){
         return 1;
     }
     state.refreshThread = refreshThread;
-
-
     return 0;
-
 }
 
 int PieCloseGraphic(){
@@ -272,24 +186,18 @@ int PieCloseGraphic(){
     state.killThread = 1;
     pthread_join(state.refreshThread, NULL);
 
-    if (state.maxColors > 0) {
-        for (int i = 0; i < state.maxColors; i++) {
-            if (state.origColors[i].saved) {
-                init_color(i, state.origColors[i].r, state.origColors[i].g, state.origColors[i].b);
-            }
-        }
-    }
 
-    for (int i = 1; i < state.nextColorIdx && i < 256; i++) {
-        init_pair(i, COLOR_WHITE, COLOR_BLACK);
-    }
 
-	curs_set(1);
-    endwin();
-    reset_shell_mode();
+    signal(SIGWINCH, SIG_DFL);
+    signal(SIGINT, SIG_DFL);
+    signal(SIGQUIT,SIG_DFL);
+    signal(SIGTERM,SIG_DFL);
+    DisableRawMode();
 
-    //escape codes to cleanup and reset the terminal
+    printf("\033[2J\033[1;1H");
+    //one of these bad boys might screw things up
     printf("\033[0m\033[?25h");
+
     printf("\033]104\007");
     fflush(stdout);
 
@@ -316,7 +224,7 @@ void* PieRefreshThread(void* payload){
             }
         }
 
-        refresh();
+        fflush(stdout);
         usleep(REFRESH60);
 
 
@@ -331,42 +239,6 @@ void PieUserFBtoState(sense_fb_bitmap_t* userFb){
 }
 
 
-
-int FindCloseColorId(uint16_t color565){
-	if (state.nextColorIdx == 0) {
-        return 0;
-    }
-
-    int targetR = (color565 >> 11) & 0x1F;
-    int targetG = (color565 >> 5) & 0x3F;
-    int targetB = color565 & 0x1F;
-
-    int bestIdx = 0;
-    int minDistance = INT_MAX;
-
-    for (int i = 0; i < state.nextColorIdx && i < 256; i++) {
-        uint16_t cachedColor = state.colorCache[i];
-        int cachedR = (cachedColor >> 11) & 0x1F;
-        int cachedG = (cachedColor >> 5) & 0x3F;
-        int cachedB = cachedColor & 0x1F;
-
-        int dr = targetR - cachedR;
-        int dg = targetG - cachedG;
-        int db = targetB - cachedB;
-        int distance = (dr * dr) * 4 + (dg * dg) * 2 + (db * db) * 4;
-
-        if (distance < minDistance) {
-            minDistance = distance;
-            bestIdx = i;
-        }
-    }
-
-    return bestIdx;
-	return 0;
-}
-
-
-
 uint16_t RGB255toRGB565(int r,int g,int b){
     //ripped straight from libsense
     r=(float)r / 255.0 * 31.0 + 0.5;
@@ -375,40 +247,97 @@ uint16_t RGB255toRGB565(int r,int g,int b){
 	return r<<11|g<<5|b;
 }
 
-void SaveOriginalColor(int colorId) {
-    if (state.maxColors<=0 || colorId < 0 || colorId >= state.maxColors || state.origColors[colorId].saved) {
-        return;
-    }
 
-    short r, g, b;
-    if (color_content(colorId, &r, &g, &b) == OK) {
-        state.origColors[colorId].r = r;
-        state.origColors[colorId].g = g;
-        state.origColors[colorId].b = b;
-        state.origColors[colorId].saved = 1;
-    } else {
-        state.origColors[colorId].saved = 0;
-    }
+void CursorMove(int y, int x){
+	printf("\033[%d;%dH",y+1,x+1);
+}
+void PiePrintChar(int y,int x, char c){
+	CursorMove(y,x);
+	putchar(c);
+}
+void DisableRawMode(){
+	tcsetattr(STDIN_FILENO, TCSAFLUSH,&originalTerm);
+	printf("\033[?25h");
+    printf("\033[0m");
+}
+void EnableRawMode(){
+	tcgetattr(STDIN_FILENO, &originalTerm);
+    atexit(DisableRawMode);
+    struct termios raw = originalTerm;
+    //might experiment without ISIG, since I probably still want to have signals?
+    raw.c_lflag &= ~(ECHO | ICANON | IEXTEN);
+    raw.c_iflag &= ~(IXON | ICRNL);
+    raw.c_oflag &= ~(OPOST);
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
+    printf("\033[?25l");
 }
 
-void RestoreOriginalColors() {
-    if (state.maxColors <= 0) {
-        return;
+
+void PieCleanExit(int sig) {
+    DisableRawMode();
+    PieCloseJoystick();
+    PieCloseGraphic();
+    exit(0);
+}
+void HandleResize(int sig) {
+    printf("\033[2J");
+    PieRedrawGraphic();
+}
+
+
+
+void PieRedrawGraphic() {
+    struct winsize w;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1) {
+        w.ws_col = 80;
+        w.ws_row = 24;
     }
 
-    for (int i = 0; i < state.maxColors; i++) {
-        if (state.origColors[i].saved) {
-            init_color(i, state.origColors[i].r, state.origColors[i].g, state.origColors[i].b);
+    int gridWidth = 33;
+    int gridHeight = 17;
+    int startX = (w.ws_col - gridWidth) / 2;
+    int startY = (w.ws_row - gridHeight) / 2;
+
+    if (startX < 0) startX = 0;
+    if (startY < 0) startY = 0;
+
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            PiePrintChar(startY + y * 2, startX + x * 4, '+');
+            PiePrintChar(startY + y * 2, startX + x * 4 + 1, '-');
+            PiePrintChar(startY + y * 2, startX + x * 4 + 2, '-');
+            PiePrintChar(startY + y * 2, startX + x * 4 + 3, '-');
         }
+        PiePrintChar(startY + y * 2, startX + 32, '+');
+
+        for (int x = 0; x < 8; x++) {
+            PiePrintChar(startY + y * 2 + 1, startX + x * 4, '|');
+
+            state.pixels[x][y].x = (startX + x * 4 + 2);
+            state.pixels[x][y].y = (startY + (7 - y) * 2 + 1);
+
+            PiePrintChar(startY + y * 2 + 1, startX + x * 4 + 3, ' ');
+        }
+        PiePrintChar(startY + y * 2 + 1, startX + 32, '|');
     }
+
+    for (int x = 0; x < 8; x++) {
+        PiePrintChar(startY + 16, startX + x * 4, '+');
+        PiePrintChar(startY + 16, startX + x * 4 + 1, '-');
+        PiePrintChar(startY + 16, startX + x * 4 + 2, '-');
+        PiePrintChar(startY + 16, startX + x * 4 + 3, '-');
+    }
+    PiePrintChar(startY + 16, startX + 32, '+');
+
+    fflush(stdout);
 }
+
 
 
 
 //Joystick Functions
 
 int PieInitJoystick(){
-	keypad(stdscr, TRUE);
 	pthread_mutex_init(&state.joystickPipe.lock, NULL);
 	state.killJoystickThread = 0;
 	pthread_t jsThread;
@@ -424,10 +353,6 @@ void PieCloseJoystick(){
 	state.killJoystickThread = 1;
 	pthread_join(state.joystickPollingThread,NULL);
 }
-
-
-
-
 
 int PieGetJoystickValue(){
 	int code;
@@ -445,31 +370,41 @@ int PieGetJoystickValue(){
 
 
 void* PieJoystickThread(void* payload){
-	int ch,send;
+
+	char buf[3];
+	int code;
+	int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+	fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
 	while(!state.killJoystickThread){
-		ch = getch();
-		send = 0;
+		code = 0;
+		if (read(STDIN_FILENO, &buf[0], 1) > 0) {
+			if (buf[0] == '\x1b') {
+				if (read(STDIN_FILENO, &buf[1], 1) > 0 && read(STDIN_FILENO, &buf[2], 1) > 0) {
+					if (buf[1] == '[') {
+						switch(buf[2]) {
+							case 'A': code =  KEY_UP; break;
+							case 'B': code =  KEY_DOWN; break;
+							case 'C': code =  KEY_RIGHT; break;
+							case 'D': code =  KEY_LEFT; break;
+						}
+					}
+				}
+			} else if (buf[0] == '\n' || buf[0] == '\r') {
+				code =  KEY_ENTER;
+			}
+		}
 
-	 	if(ch == NC_KEY_UP) {ch = JOY_KEY_UP; send = 1;}
-			else if(ch == NC_KEY_DOWN) {ch = JOY_KEY_DOWN; send =1;}
-			else if(ch == NC_KEY_LEFT) { ch = JOY_KEY_LEFT; send =1;}
-			else if(ch == NC_KEY_RIGHT) {ch = JOY_KEY_RIGHT; send =1;}
-			else if(ch == NC_KEY_ENTER || ch == '\n' || ch == '\r') {ch = JOY_KEY_ENTER; send = 1;}
-
-
-		if(send){
+		if(code){
 			pthread_mutex_lock(&state.joystickPipe.lock);
-			state.joystickPipe.keyCode = ch;
+			state.joystickPipe.keyCode = code;
 			state.joystickPipe.read = 0;
 			pthread_mutex_unlock(&state.joystickPipe.lock);
 		}
-
-		usleep(REFRESH60);
-
+		usleep(10000);
 	}
 
+	fcntl(STDIN_FILENO, F_SETFL, flags);
 	return NULL;
-
 }
 
 

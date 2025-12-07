@@ -5,15 +5,17 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <limits.h>
-
-
-
+#include <stdio.h>
+#include <termios.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
 /*
  *
  *
  *
  *
- *  Libsense Wrapper Functions and Structs
+ *  Libsense Wrapper Definitions
  *
  *
  *
@@ -21,7 +23,7 @@
 */
 
 
-//Framebuffer Wrappers and Structs
+//Framebuffer Wrapper Definitions
 
 typedef struct {
     char id[16];
@@ -48,10 +50,8 @@ uint16_t getColor(int red,int green,int blue);
 
 
 
-//Joystick Wrappers and Structs
+//Joystick Wrapper Definitions
 
-//these need to exist for the user, it is the joystick codes
-//The issue is that ncurses uses the same names for these Macros, but with different values
 #define KEY_ENTER 28
 #define KEY_UP 103
 #define KEY_DOWN 108
@@ -80,7 +80,7 @@ void pollJoystick(pi_joystick_t* device, void (*callback)(unsigned int code),int
  *
  *
  *
- * Emulator Functions and Structs
+ * Emulator Definitions
  *
  *
  *
@@ -91,7 +91,7 @@ void pollJoystick(pi_joystick_t* device, void (*callback)(unsigned int code),int
 
 
 
-//Joystick Functions and Structs
+//Joystick Emulator Definitions
 
 
 
@@ -109,14 +109,7 @@ void* PieJoystickThread(void*);
 
 
 
-//Framebuffer Functions and Structs
-
-typedef struct {
-    int r;
-    int g;
-    int b;
-    int saved;
-} SavedColor;
+//Framebuffer Emulator Definitions
 
 
 typedef struct {
@@ -128,12 +121,8 @@ typedef struct {
 typedef struct {
     EmulatedPixel pixels[8][8];
     sense_fb_bitmap_t* userFb;
-    uint16_t colorCache[256];
-    int nextColorIdx;
     pthread_t refreshThread;
     int killThread;
-    SavedColor origColors[256];
-    int maxColors;
     JoystickPipeline joystickPipe;
     pthread_t joystickPollingThread;
     int killJoystickThread;
@@ -145,12 +134,19 @@ int PieInitGraphic();
 int PieCloseGraphic();
 void* PieRefreshThread(void*);
 void PieUserFBtoState(sense_fb_bitmap_t*);
+void PieCleanExit(int);
+
+
+
 uint16_t RGB255toRGB565(int,int,int);
-void SaveOriginalColor(int);
-void RestoreOriginalColors();
-int FindCloseColorId(uint16_t);
 
 
+void CursorMove(int,int);
+void PiePrintChar(int,int,char);
+void DisableRawMode();
+void EnableRawMode();
+void HandleResize(int);
+void PieRedrawGraphic();
 
 //Debug/Util Functions
 

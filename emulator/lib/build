@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 
 
-gcc -c piemulator.c -pthread -lncurses -o piemulator.o || exit 1
+exitMSG(){
+	echo "Build Failed"
+}
 
-ar rcs libpie.a piemulator.o || exit 1
 
-sudo cp libpie.a /usr/local/lib/ || exit 1
+gcc -c piemulator.c -pthread -lncurses -o piemulator.o || exitMSG
+
+ar rcs libpie.a piemulator.o || exitMSG
+
+sudo cp libpie.a /usr/local/lib/ || exitMSG
 
 rm piemulator.o
 
-echo "Done"
+echo "Finished building lpie"

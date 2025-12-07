@@ -17,6 +17,36 @@ This project is a work in progress, and has some limitations that
 be used for quick testing or on the go development.
 
 
+
+
+
+
+
+
+USAGE:
+
+To use Raspberry PiE, git clone this repo, and run the build script ?
+
+To link against your code, make sure that 'piemulator.h' is in the same 
+directory as 'sense.h', and then simply replace all of your 
+'#include "sense.h"' with '#include "piemulator.h" 
+and then instead of compiling with '-lsense', compile with '-lpie' 
+
+
+
+the arrow keys work as the joystick, and enter/return works as the joystick button
+
+
+There are some functional limitations to the library. Because of the nature of how
+we assign color values to pixels (directly assigning, ie bitmap[x][y] = color), I 
+have not yet found a good way to intercept and check the coordinates of the pixel 
+the user assigned a value to. On the actual hardware, I believe assigning a value
+to a pixel outside of [0-7] on the x or y causes a seg fault. In this library, it
+currently leads to undefined behavior. So use this library at your own risk, and
+certainly do not solely use this and just pray it works on the actual hardware.
+
+
+
 TODO:
 
 1. Figure out if it is pixel[y][x] or pixel[x][y]

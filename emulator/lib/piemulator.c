@@ -286,6 +286,14 @@ void HandleResize(int sig) {
     PieRedrawGraphic();
 }
 
+void PieHandleSegFault(){
+    DisableRawMode();
+    PieCloseJoystick();
+    PieCloseGraphic();
+    printf("Segmentation Fault\n");
+    exit(1);
+}
+
 
 
 void PieRedrawGraphic() {
@@ -469,13 +477,24 @@ void setPixel(int x,int y, uint16_t color){
 }
 
 int openJoystick(){
-
+    if(PieInitJoystick()!=0)return -1;
+    return 1;
 }
 
 void closeJoystick(){
-
+    PieCloseJoystick();
 }
 
-int getJoyStickValue(){
+int getJoystickValue(){
 
+    int code = PieGetJoystickValue();
+    switch(code){
+        case KEY_UP: return 1;
+        case KEY_RIGHT: return 2;
+        case KEY_DOWN: return 3;
+        case KEY_LEFT: return 4;
+        case KEY_ENTER: return 5;
+        default: return 0;
+    }
+    return 0;
 }

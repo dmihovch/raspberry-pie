@@ -201,6 +201,8 @@ int PieCloseGraphic(){
     printf("\033]104\007");
     fflush(stdout);
 
+
+
     return 0;
 }
 
@@ -426,4 +428,54 @@ void PieDebug(){
             fprintf(stderr,"x:%d y:%d\n",state.pixels[i][j].x,state.pixels[i][j].y);
         }
     }
+}
+
+
+
+
+
+/*
+ *
+ *
+ * ASM wrapper functions
+ *
+ *
+ */
+
+
+int openfb(){
+	sense_fb_bitmap_t* bm = calloc(1,sizeof(sense_fb_bitmap_t));
+    if(bm == NULL){
+        return -1;
+    }
+    PieUserFBtoState(bm);
+    if(PieInitFrameBuffer()!=0){
+        free(bm);
+        return -1;
+    }
+	return 0;
+}
+
+int closefb(){
+	free(state.userFb);
+	PieCloseGraphic();
+	return 0;
+}
+
+void setPixel(int x,int y, uint16_t color){
+	int idx1D = (x*8) + y;
+	if(idx1D < 0 || idx1D > 63){PieHandleSegFault();}
+	PieSetPixel(x,y,color);
+}
+
+int openJoystick(){
+
+}
+
+void closeJoystick(){
+
+}
+
+int getJoyStickValue(){
+
 }

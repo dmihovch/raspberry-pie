@@ -7,7 +7,7 @@ we use here at UD, with identical function signatures.
 This means that users can link their programs against this library to
 test and develop without the hassle of the actual hardware, and then link
 the same program against the Libsense library in order to test and develop
-on the pi itself. At the moment, I do believe the library is POSIX compliant, 
+on the pi itself. I do believe the library is POSIX compliant, 
 but sadly(?) I haven't figured out (and probably won't) Windows compatibility. If
 anybody would like to port the library to Windows, go right ahead.
 
@@ -27,6 +27,23 @@ USAGE:
 
 To use Raspberry PiE, git clone this repo, and run the build script ?
 
+
+To compile and link against code manually 
+
+Ensure that your project, sense.h piemulator.c, and piemulator.h are in the same directory.
+
+Switch each '#include "sense.h"' -> '#include "piemulator.h"'
+
+
+gcc -c piemulator.c -pthread -o piemulator.o
+gcc -c example.c -o example.o
+gcc -o example example.o piemulator.o
+
+
+
+
+To install as a static library (gcc -o example example.c -lpie)
+
 To link against your code, make sure that 'piemulator.h' is in the same 
 directory as 'sense.h', and then simply replace all of your 
 '#include "sense.h"' with '#include "piemulator.h" 
@@ -41,8 +58,8 @@ There are some functional limitations to the library. Because of the nature of h
 we assign color values to pixels (directly assigning, ie bitmap[x][y] = color), I 
 have not yet found a good way to intercept and check the coordinates of the pixel 
 the user assigned a value to. On the actual hardware, I believe assigning a value
-to a pixel outside of [0-7] on the x or y causes a seg fault. In this library, it
-currently leads to undefined behavior. So use this library at your own risk, and
+to a pixel out of bounds it causes a seg fault. In this library, it
+currently just doesn't draw anything to the screen. So use this library at your own risk, and
 certainly do not solely use this and just pray it works on the actual hardware.
 
 

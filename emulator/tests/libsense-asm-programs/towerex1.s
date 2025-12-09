@@ -11,8 +11,19 @@ main:
         cmp x0,#0
         blt ._start_exit
         mov x8,x0
+       #get the color red and store it in x6
 
-        #get the color red and store it in x6
+
+
+	
+	mov x0,#2
+	mov x1,#2
+	mov x2,#0x08FA
+	bl setPixel
+ 
+ 	bl sleepy
+
+       	
         mov x0,#31
         mov x1,#0
         mov x2,#0
@@ -29,6 +40,17 @@ main:
         mov x0,x12
         mov x1,x13
         bl setPixel
+
+
+
+
+	mov x0,#2
+	mov x1,#2
+	mov x2,#0x08FA
+	bl setPixel
+ 
+
+
 .main_loop:
         //x12 is y
         //x13 is x

@@ -170,3 +170,5 @@ void PieRedrawGraphic();
 //Debug/Util Functions
 
 void PieDebug();
+
+void sleepy();

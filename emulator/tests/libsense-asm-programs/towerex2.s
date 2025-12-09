@@ -1,7 +1,7 @@
-.global _start
+.global main 
 .text
 
-_start:
+main:
     bl openfb
     cmp x0, #0
     blt exit

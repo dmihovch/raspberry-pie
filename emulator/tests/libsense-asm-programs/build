@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+
+name=$1
+aarch64-linux-gnu-gcc -static -o $name "$name.s" piemulator.o -lpthread 
+
+

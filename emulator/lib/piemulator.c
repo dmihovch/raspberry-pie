@@ -1,4 +1,5 @@
 #include "piemulator.h"
+#include <stdio.h>
 
 
 
@@ -138,11 +139,14 @@ void pollJoystick(pi_joystick_t *device, void (*callback)(unsigned int), int tim
 
 //FrameBuffer Emulator Functions
 
+
 void PieSetPixel(int x, int y, uint16_t color565){
 	/*
 	 * Thinking I'll probably want to cache colors in 255 form, so that we don't lose
 	 * so much color depth going from 255->565->255(8 bit)
 	 */
+
+
 	int xEmulated = state.pixels[x][y].x;
     int yEmulated = state.pixels[x][y].y;
     CursorMove(yEmulated,xEmulated);
@@ -471,9 +475,9 @@ int closefb(){
 }
 
 void setPixel(int x,int y, uint16_t color){
-	int idx1D = (x*8) + y;
-	if(idx1D < 0 || idx1D > 63){PieHandleSegFault();}
-	PieSetPixel(x,y,color);
+	//int idx1D = (x*8) + y;
+	//if(idx1D < 0 || idx1D > 63){PieHandleSegFault();}
+	state.userFb->pixel[x][y] = color;
 }
 
 int openJoystick(){
@@ -497,4 +501,12 @@ int getJoystickValue(){
         default: return 0;
     }
     return 0;
+}
+
+
+
+void sleepy(){
+
+	sleep(3);
+
 }

@@ -67,7 +67,6 @@ int PieInitFrameBuffer(){
 	EnableRawMode();
     state.killThread = 0;
     return PieInitGraphic();
-
 }
 
 int PieInitGraphic(){
@@ -403,12 +402,4 @@ int getJoystickValue(){
         default: return 0;
     }
     return 0;
-}
-
-
-
-void sleepy(){
-
-	sleep(3);
-
 }

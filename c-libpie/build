@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+fail_exit_compile()
+{
+	echo "Failed to compile piemulator.o"
+	exit 1
+}
+
+fail_exit_lib()
+{
+	rm piemulator.o
+	echo "Failed to create libpie.a"
+	exit 1
+}
+
+fail_exit_copy_lib()
+{
+	rm piemulator.o
+	rm libpie.a
+	echo "Failed to copy libpie.a to /usr/local/lib/"
+	exit 1
+}
+
+fail_exit_copy_header()
+{
+	sudo rm /usr/local/lib/libpie.a
+	rm piemulator.o
+	rm libpie.a
+	echo "Failed to copy piemulator.h to /usr/local/include/"
+	exit 1
+}
+
+
+gcc -c piemulator.c -pthread -o piemulator.o || fail_exit_compile
+
+ar rcs libpie.a piemulator.o || fail_exit_lib
+
+sudo cp libpie.a /usr/local/lib/ || fail_exit_copy_lib
+
+sudo cp piemulator.h /usr/local/include/ || fail_exit_copy_header
+
+rm piemulator.o
+
+rm libpie.a
+
+echo "Built libpie!"
+exit 0

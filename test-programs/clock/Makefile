@@ -11,3 +11,6 @@ display.o: display.c display.h
 	cc -c display.c -L ~/lib -I ~/include -lsense
 run:
 	./clock.sh | ./clockdisplay
+
+pie:
+	gcc -o clock main.c display.c -lpie

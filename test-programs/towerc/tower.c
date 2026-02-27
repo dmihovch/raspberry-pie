@@ -1,5 +1,5 @@
 
-#include "../../lib/piemulator.h"
+#include "piemulator.h"
 int running = 1;
 int x = 0;
 int y = 0;

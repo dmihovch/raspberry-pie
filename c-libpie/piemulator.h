@@ -150,25 +150,7 @@ void PieHandleSegFault();
 void PieRedrawGraphic();
 
 
-
-/*
- *
- * Libsense-asm Wrapper Definitions
- *
- *
- */
-
-
- int openfb();
- int closefb();
- void setPixel(int ,int , uint16_t);
- int openJoystick();
- void closeJoystick();
- int getJoystickValue();
-
-
 //Debug/Util Functions
 
 void PieDebug();
 
-void sleepy();

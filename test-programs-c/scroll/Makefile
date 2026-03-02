@@ -24,4 +24,5 @@ d:
 i:
 	vim input.c
 
-
+pie:
+	cc -o scroll main.c display.c input.c -lpie -lm

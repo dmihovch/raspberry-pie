@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../../lib/piemulator.h"
+#include <piemulator.h>
 #include <stdbool.h>
 #include <string.h>
 #define BLACK 0x0000

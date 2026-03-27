@@ -1,6 +1,5 @@
-#include <stdio.h>
 #include <unistd.h>
-#include "../../lib/piemulator.h"
+#include <piemulator.h>
 
 #define BLACK 0x0000
 #define WHITE 0xFFFF

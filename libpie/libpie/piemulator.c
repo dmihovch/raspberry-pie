@@ -153,7 +153,7 @@ void PieSetPixel(int x, int y, uint16_t color565){
 		printf("\033[0m ");
         return;
 	}
-	int r = ((color565 >> 11) & 0x1F) * 255 / 31;
+		int r = ((color565 >> 11) & 0x1F) * 255 / 31;
     int g = ((color565 >> 5) & 0x3F) * 255 / 63;
     int b = (color565 & 0x1F) * 255 / 31;
     printf("\033[48;2;%d;%d;%dm ", r, g, b);
@@ -212,20 +212,16 @@ int PieCloseGraphic(){
 void* PieRefreshThread(void* payload){
 	/*
 	 *
-	 *
-	 *	Going to have to ask Roosen about this,
-	 *  but I think the grid is supposed to be laid out as
-	 *  pixel[y][x] not pixel[x][y]
+	 * the coordinate system is reflected on the line y = x | (0,0) top right, (7,0) top left, (0,7) bottom right, (7,7) bottom left
 	 *
 	 *
 	 */
     int i;
     int j;
     while(!state.killThread){
-    	int x,y;
         for(i = 0; i<8; i++){
             for(j = 0; j<8; j++){
-                PieSetPixel(i,j,state.userFb->pixel[i][j]);
+                PieSetPixel(7-i,7-j,state.userFb->pixel[i][j]);
             }
         }
 
@@ -395,15 +391,15 @@ void* PieJoystickThread(void* payload){
 				if (read(STDIN_FILENO, &buf[1], 1) > 0 && read(STDIN_FILENO, &buf[2], 1) > 0) {
 					if (buf[1] == '[') {
 						switch(buf[2]) {
-							case 'A': code =  KEY_UP; break;
-							case 'B': code =  KEY_DOWN; break;
-							case 'C': code =  KEY_RIGHT; break;
-							case 'D': code =  KEY_LEFT; break;
+							case 'A': code =  105; break;
+							case 'B': code =  106; break;
+							case 'C': code =  103; break;
+							case 'D': code =  108; break;
 						}
 					}
 				}
 			} else if (buf[0] == '\n' || buf[0] == '\r') {
-				code =  KEY_ENTER;
+				code =  28;
 			}
 		}
 

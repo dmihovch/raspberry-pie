@@ -53,6 +53,18 @@ uint16_t getColor(int red,int green,int blue);
 
 //Joystick Wrapper Definitions
 
+// #define _KEY_ENTER 28
+// #define _KEY_UP 103
+// #define _KEY_DOWN 108
+// #define _KEY_RIGHT 106
+// #define _KEY_LEFT 105
+
+// #define KEY_ENTER _KEY_ENTER
+// #define KEY_UP _KEY_LEFT
+// #define KEY_DOWN _KEY_RIGHT
+// #define KEY_RIGHT _KEY_UP
+// #define KEY_LEFT _KEY_DOWN
+
 #define KEY_ENTER 28
 #define KEY_UP 103
 #define KEY_DOWN 108

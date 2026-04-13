@@ -1,4 +1,4 @@
-#include "../../lib/piemulator.h"
+#include "piemulator.h"
 #include <stdio.h>
 int x = 0;
 int y = 0;

@@ -1,1 +1,0 @@
-Not sure why I made broken copies of piemulator.c and piemulator.h in this directory

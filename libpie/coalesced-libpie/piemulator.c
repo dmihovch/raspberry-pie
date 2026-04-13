@@ -147,8 +147,8 @@ void PieSetPixel(int x, int y, uint16_t color565){
 
 
 	int xEmulated = state.pixels[x][y].x;
-    int yEmulated = state.pixels[x][y].y;
-    CursorMove(yEmulated,xEmulated);
+  int yEmulated = state.pixels[x][y].y;
+  CursorMove(yEmulated,xEmulated);
 	if(color565 == 0){
 		printf("\033[0m ");
         return;

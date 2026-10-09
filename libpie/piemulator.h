@@ -92,6 +92,8 @@ typedef struct {
     pthread_t joystickPollingThread;
     int killJoystickThread;
     int rotation; // 0 = USB ports up; each R press rotates the Pi 90 degrees clockwise
+    int redrawNeeded; // set by HandleResize; cleared by the refresh thread after redrawing
+    int inputRow; // terminal row for canonical-mode input echo, -1 when unavailable
 } PieState;
 
 void PieSetPixel(int x, int y, uint16_t color565);

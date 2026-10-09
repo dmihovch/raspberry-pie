@@ -7,6 +7,9 @@
  */
 static PieState state;
 static struct termios originalTerm;
+static int rawModeEnabled = 0;
+static sense_fb_bitmap_t lastDrawnBitmap;
+static int lastDrawnRotation = -1;
 
 
 /*
@@ -225,9 +228,10 @@ void PieSetPixel(int x, int y, uint16_t color565){
 }
 
 int PieInitFrameBuffer(){
-	EnableRawMode();
+	TerminalHideCursor();
     state.killThread = 0;
     state.rotation = 0;
+    state.redrawNeeded = 1;
     return PieInitGraphic();
 
 }
@@ -262,7 +266,6 @@ int PieCloseGraphic(){
     signal(SIGQUIT,SIG_DFL);
     signal(SIGTERM,SIG_DFL);
     signal(SIGSEGV, SIG_DFL);
-    DisableRawMode();
 
     TerminalClearScreen();
     TerminalMoveCursor(0, 0);
@@ -282,16 +285,29 @@ void* PieRefreshThread(void* payload){
     int y;
     while(!state.killThread){
         int rotation = state.rotation;
-        for(y = 0; y<8; y++){
-            for(x = 0; x<8; x++){
-                int cellX;
-                int cellY;
-                FramebufferToCell(x, y, rotation, &cellX, &cellY);
-                PieSetPixel(cellX, cellY, state.userFb->pixel[y][x]);
+        //Skip the draw pass while the bitmap, rotation, and grid layout are
+        //unchanged so the cursor stays put for canonical-mode input.
+        if(state.redrawNeeded || rotation != lastDrawnRotation ||
+           memcmp(state.userFb->pixel, lastDrawnBitmap.pixel, sizeof(lastDrawnBitmap.pixel)) != 0){
+            //Snapshot before drawing so a write that lands mid-pass is drawn
+            //on the next pass instead of being lost.
+            memcpy(lastDrawnBitmap.pixel, state.userFb->pixel, sizeof(lastDrawnBitmap.pixel));
+            lastDrawnRotation = rotation;
+            state.redrawNeeded = 0;
+            for(y = 0; y<8; y++){
+                for(x = 0; x<8; x++){
+                    int cellX;
+                    int cellY;
+                    FramebufferToCell(x, y, rotation, &cellX, &cellY);
+                    PieSetPixel(cellX, cellY, lastDrawnBitmap.pixel[y][x]);
+                }
             }
+            if(state.inputRow >= 0){
+                TerminalMoveCursor(state.inputRow, 0);
+            }
+            fflush(stdout);
         }
 
-        fflush(stdout);
         usleep(REFRESH60);
 
 
@@ -323,39 +339,40 @@ void PiePrintChar(int y,int x, char c){
 	putchar(c);
 }
 void DisableRawMode(){
+	if(!rawModeEnabled) return;
 	tcsetattr(STDIN_FILENO, TCSAFLUSH,&originalTerm);
-	TerminalShowCursor();
-	TerminalResetStyle();
+	rawModeEnabled = 0;
 }
 void EnableRawMode(){
-	tcgetattr(STDIN_FILENO, &originalTerm);
-    atexit(DisableRawMode);
+	//Raw mode only applies to a terminal. Piped stdin needs no termios changes.
+	if(!isatty(STDIN_FILENO)) return;
+	if(tcgetattr(STDIN_FILENO, &originalTerm) == -1) return;
     struct termios raw = originalTerm;
     //might experiment without ISIG, since I probably still want to have signals?
     raw.c_lflag &= ~(ECHO | ICANON | IEXTEN);
     raw.c_iflag &= ~(IXON | ICRNL);
     raw.c_oflag &= ~(OPOST);
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
-    TerminalHideCursor();
+    if(tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1) return;
+    atexit(DisableRawMode);
+    rawModeEnabled = 1;
 }
 
 
 void PieCleanExit(int sig) {
     (void)sig;
-    DisableRawMode();
     PieCloseJoystick();
     PieCloseGraphic();
     exit(0);
 }
 void HandleResize(int sig) {
     (void)sig;
+    state.redrawNeeded = 1;
     TerminalClearScreen();
     PieRedrawGraphic();
 }
 
 void PieHandleSegFault(int sig){
     (void)sig;
-    DisableRawMode();
     PieCloseJoystick();
     PieCloseGraphic();
     printf("Segmentation Fault\n");
@@ -450,6 +467,16 @@ void PieRedrawGraphic() {
 
     DrawEdgeMarkers(startX, startY, state.rotation, w.ws_col, w.ws_row);
 
+    //Reserve the row below the grid for canonical-mode input echo.
+    int inputRow = startY + GRID_HEIGHT + 1;
+    if(inputRow >= w.ws_row){
+        inputRow = -1;
+    }
+    state.inputRow = inputRow;
+    if(inputRow >= 0){
+        TerminalMoveCursor(inputRow, 0);
+    }
+
     fflush(stdout);
 }
 
@@ -461,8 +488,10 @@ void PieRedrawGraphic() {
 int PieInitJoystick(){
 	pthread_mutex_init(&state.joystickPipe.lock, NULL);
 	state.killJoystickThread = 0;
+	EnableRawMode();
 	pthread_t jsThread;
     if(pthread_create(&jsThread, NULL, PieJoystickThread, NULL) != 0){
+        DisableRawMode();
         return 1;
     }
     state.joystickPollingThread = jsThread;
@@ -473,6 +502,7 @@ int PieInitJoystick(){
 void PieCloseJoystick(){
 	state.killJoystickThread = 1;
 	pthread_join(state.joystickPollingThread,NULL);
+	DisableRawMode();
 }
 
 int PieGetJoystickValue(){

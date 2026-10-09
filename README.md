@@ -133,11 +133,17 @@ require the library installed for aarch64:
 ## Caveats
 
 - The emulator takes over the terminal while a framebuffer is open. It
-  clears the screen, hides the cursor, and puts stdin in raw mode. It
-  restores the terminal on exit, including on SIGINT, SIGQUIT, SIGTERM,
-  and SIGSEGV.
-- Joystick input requires stdin to be a terminal. Piped stdin disables raw
-  mode and input.
+  clears the screen and hides the cursor. It restores the terminal on
+  exit, including on SIGINT, SIGQUIT, SIGTERM, and SIGSEGV.
+- The joystick owns stdin. A program that calls `getJoystickDevice` cannot
+  also read stdin itself. A program that reads stdin itself must not open
+  the joystick.
+- The joystick puts stdin in raw mode. Framebuffer-only programs leave the
+  terminal in canonical mode, so `scanf` works interactively. Typed input
+  echoes on the line below the grid when the terminal has room for it.
+- Piped stdin works for framebuffer-only programs. The joystick thread
+  also reads piped stdin; raw mode is skipped because a pipe is not a
+  terminal.
 - The palette reset escape sequence (`\033]104`) is xterm-specific. Other
   terminals ignore it.
 - The library is single-instance. One framebuffer and one joystick can be

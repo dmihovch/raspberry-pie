@@ -1,73 +1,154 @@
-# Raspberry-Pi-Emulator
-Raspberry Pi Sense Hat Emulator
+# Raspberry Pi Sense HAT Emulator
 
-Raspberry Pie is a library for programming the emulated sensehat
-of a raspberry pi. The library is built to work with the Libsense library
-we use here at UD, with identical function signatures.
-This means that users can link their programs against this library to
-test and develop without the hassle of the actual hardware, and then link
-the same program against the Libsense library in order to test and develop
-on the pi itself. I do believe the library is POSIX compliant, 
-but sadly(?) I haven't figured out (and probably won't) Windows compatibility. If
-anybody would like to port the library to Windows, go right ahead.
+libpie is a static library that emulates the Raspberry Pi Sense HAT LED
+array and joystick in a terminal. It exposes the same function signatures
+as libsense, so a program written for the Sense HAT compiles and runs
+against either library.
 
+## Supported hardware
 
-This project is a work in progress, and has some limitations that
-(potentially) won't be able to be circumvented. This library should only
-be used for quick testing or on the go development.
+- LED array (8 by 8 pixels)
+- Joystick
 
+## Not supported
 
+- Gyroscope
+- Accelerometer
+- Magnetometer
+- Temperature and humidity sensor
+- Pressure sensor
 
+Programs that call libsense functions for these sensors do not compile
+against libpie.
 
+## Dependencies
 
+Build:
 
+- gcc (or another C compiler)
+- ar (binutils)
+- make
 
+Runtime:
 
-USAGE:
+- Linux or another POSIX system. Windows is not supported.
+- A terminal with ANSI escape sequence support, including 24-bit color
+  (truecolor). Terminals without 24-bit color render colors incorrectly.
+- A terminal at least 33 columns by 17 rows for the LED grid. The rotation
+  menu and port markers are skipped when the terminal is too small.
 
-To use Raspberry PiE, git clone this repo, and run the build script ?
+Linking:
 
+- Programs link with `-lpie -pthread`. The `-pthread` flag is required
+  because the library uses threads internally.
 
-To compile and link against code manually 
+Assembly examples:
 
-Ensure that your project, sense.h piemulator.c, and piemulator.h are in the same directory.
+- `aarch64-linux-gnu-gcc` to cross compile, or `gcc` on a Raspberry Pi.
 
-Switch each '#include "sense.h"' -> '#include "piemulator.h"'
+## Build and install
 
+Build:
 
-gcc -c piemulator.c -pthread -o piemulator.o
-gcc -c example.c -o example.o
-gcc -o example example.o piemulator.o
+    make -C libpie
 
+This produces `libpie.a`, a static archive containing the C API and the
+assembly API.
 
+Install to `$HOME/.local` (no root access needed):
 
+    make -C libpie install
 
-To install as a static library (gcc -o example example.c -lpie)
+This copies `libpie.a` to `$HOME/.local/lib` and `piemulator.h` to
+`$HOME/.local/include`. Linking with `-lpie` then requires:
 
-To link against your code, make sure that 'piemulator.h' is in the same 
-directory as 'sense.h', and then simply replace all of your 
-'#include "sense.h"' with '#include "piemulator.h" 
-and then instead of compiling with '-lsense', compile with '-lpie' 
+    CPATH=$HOME/.local/include
+    LIBRARY_PATH=$HOME/.local/lib
 
+Install system-wide:
 
+    make -C libpie install PREFIX=/usr/local
 
-the arrow keys work as the joystick, and enter/return works as the joystick button
+A system-wide install needs no `CPATH` or `LIBRARY_PATH` because gcc
+searches `/usr/local/include` and `/usr/local/lib` by default.
 
+Uninstall:
 
-There are some functional limitations to the library. Because of the nature of how
-we assign color values to pixels (directly assigning, ie bitmap[x][y] = color), I 
-have not yet found a good way to intercept and check the coordinates of the pixel 
-the user assigned a value to. On the actual hardware, I believe assigning a value
-to a pixel out of bounds it causes a seg fault. In this library, it
-currently just doesn't draw anything to the screen. So use this library at your own risk, and
-certainly do not solely use this and just pray it works on the actual hardware.
+    make -C libpie uninstall
 
+## Usage
 
+Replace `#include "sense.h"` with `#include <piemulator.h>` and link with
+`-lpie` instead of `-lsense`:
 
-TODO:
+    gcc -o example example.c -lpie -pthread
 
-1. Figure out if it is pixel[y][x] or pixel[x][y]
-2. Simulate segfault on out-of-bounds pixel writes(?(idk if this will be possible))
-3. Make a build script that isn't terrible, compiling these programs is annoying
-4. Do some real, honest to god testing
-5. Then do some real, honest to god stress testing
+C API:
+
+- `getFrameBuffer`
+- `freeFrameBuffer`
+- `clearFrameBuffer`
+- `getColor`
+- `getJoystickDevice`
+- `freeJoystick`
+- `pollJoystick`
+
+Assembly API (aarch64):
+
+- `openfb`
+- `closefb`
+- `setPixel`
+- `openJoystick`
+- `closeJoystick`
+- `getJoystickValue`
+- `getColor`
+
+## Orientation
+
+The emulator shows the Pi with its USB ports up by default. In this
+orientation `pixel[0][0]` is the bottom-left LED, x increases to the
+right, and y increases upward.
+
+Press R to rotate the Pi 90 degrees clockwise. USB and ETH markers on the
+edges of the grid show the port positions for the current orientation. A
+menu in the top-left corner shows the R key binding.
+
+The arrow keys map to the on-screen directions for the current
+orientation. Enter or return is the joystick button. The R key is consumed
+by the emulator and never delivered to the user program.
+
+## Examples
+
+Install the library first, then:
+
+    make -C examples/c-pie
+    make -C examples/asm-pie
+
+The C examples are written to `examples/c-pie/bin/`. The assembly examples
+require the library installed for aarch64:
+
+    make -C libpie install CC=aarch64-linux-gnu-gcc   # cross compiling
+    make -C libpie install                            # on a Raspberry Pi
+
+## Caveats
+
+- The emulator takes over the terminal while a framebuffer is open. It
+  clears the screen, hides the cursor, and puts stdin in raw mode. It
+  restores the terminal on exit, including on SIGINT, SIGQUIT, SIGTERM,
+  and SIGSEGV.
+- Joystick input requires stdin to be a terminal. Piped stdin disables raw
+  mode and input.
+- The palette reset escape sequence (`\033]104`) is xterm-specific. Other
+  terminals ignore it.
+- The library is single-instance. One framebuffer and one joystick can be
+  open at a time.
+
+## Limitations
+
+- Out-of-bounds pixel writes are not detected or prevented. The real
+  hardware faults on out-of-bounds writes.
+- `pollJoystick` ignores its timeout argument and returns immediately.
+- Colors round-trip through RGB565, which loses precision compared to
+  24-bit color.
+- The refresh loop sleeps 16667 microseconds per frame.
+- The framebuffer is not double buffered.

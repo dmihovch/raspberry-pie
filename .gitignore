@@ -23,7 +23,6 @@
 *.lo
 
 # Shared objects (inc. Windows DLLs)
-*.dll
 *.so
 *.so.*
 *.dylib
@@ -55,4 +54,9 @@ dkms.conf
 *.dwo
 
 *.DS_Store
-emulator/bin/*
+
+# Example program binaries
+/examples/c-pie/bin/
+/examples/asm-pie/dan
+/examples/asm-pie/towerex1
+/examples/asm-pie/towerex2
